@@ -3,7 +3,7 @@ on:
   push:
     branches: [main]
   workflow_dispatch:
-  # Refresh preview after Creative Next module initialization diagnostics.
+  # Refresh preview after Creative Next HTTP module diagnostics v2.
 permissions:
   contents: read
   pages: write
