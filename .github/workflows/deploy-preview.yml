@@ -3,6 +3,7 @@ on:
   push:
     branches: [main]
   workflow_dispatch:
+  # Refresh preview after Creative Next feature-branch updates.
 permissions:
   contents: read
   pages: write
