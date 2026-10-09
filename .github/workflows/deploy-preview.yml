@@ -26,10 +26,24 @@ jobs:
           mkdir -p _site
           cp -R source/creative-next/phase-1b _site/phase-1b
           cp -R source/creative-next/phase-2-preview _site/phase-2-preview
+          # GitHub Pages may serve .mjs with an unsupported MIME type on iOS.
+          # Publish module files as .js and update every local import reference.
+          python3 - <<'PY'
+          from pathlib import Path
+          root = Path('_site')
+          modules = list(root.rglob('*.mjs'))
+          for path in modules:
+              body = path.read_text(encoding='utf-8')
+              path.with_suffix('.js').write_text(body.replace('.mjs', '.js'), encoding='utf-8')
+              path.unlink()
+          for path in root.rglob('*.html'):
+              body = path.read_text(encoding='utf-8')
+              path.write_text(body.replace('.mjs', '.js'), encoding='utf-8')
+          PY
           printf '%s\n' '<!doctype html><html lang="ja"><meta charset="utf-8"><meta http-equiv="refresh" content="0;url=./phase-2-preview/index.html"><title>Creative Next Preview</title><a href="./phase-2-preview/index.html">Creative Nextを開く</a></html>' > _site/index.html
           test -f _site/phase-2-preview/index.html
-          test -f _site/phase-2-preview/preview.mjs
-          test -f _site/phase-1b/integration/isolated-editor-session.mjs
+          test -f _site/phase-2-preview/preview.js
+          test -f _site/phase-1b/integration/isolated-editor-session.js
           touch _site/.nojekyll
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5
