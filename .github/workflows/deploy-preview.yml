@@ -24,6 +24,7 @@ jobs:
       - name: Prepare isolated static preview
         run: |
           mkdir -p _site
+          cp -R source/creative-next/phase-1a _site/phase-1a
           cp -R source/creative-next/phase-1b _site/phase-1b
           cp -R source/creative-next/phase-2-preview _site/phase-2-preview
           # GitHub Pages may serve .mjs with an unsupported MIME type on iOS.
@@ -43,6 +44,7 @@ jobs:
           printf '%s\n' '<!doctype html><html lang="ja"><meta charset="utf-8"><meta http-equiv="refresh" content="0;url=./phase-2-preview/index.html"><title>Creative Next Preview</title><a href="./phase-2-preview/index.html">Creative Nextを開く</a></html>' > _site/index.html
           test -f _site/phase-2-preview/index.html
           test -f _site/phase-2-preview/preview.js
+          test -f _site/phase-1a/core/poi-store.js
           test -f _site/phase-1b/integration/isolated-editor-session.js
           touch _site/.nojekyll
       - name: Configure GitHub Pages
