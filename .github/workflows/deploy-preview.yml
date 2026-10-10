@@ -22,6 +22,12 @@ jobs:
       - name: Fetch Creative Next feature branch (public source)
         run: |
           git clone --depth 1 --branch feature/creative-next-kmz-phase1b-20261009 https://github.com/Kaityo1221/Campsite-Design-Tool-JP.git source
+          # Pin already tested versions. A new audit build must not silently
+          # replace the JavaScript at an older smoke-test URL.
+          git -C source fetch --depth 1 origin 7d9628b25ff23b30f245f9e2e6f81ec647562a60
+          git -C source worktree add --detach ../source-r9 7d9628b25ff23b30f245f9e2e6f81ec647562a60
+          git -C source fetch --depth 1 origin 7abdbf0d8e7cc52baa19c49db5bda063d22b089d
+          git -C source worktree add --detach ../source-r10 7abdbf0d8e7cc52baa19c49db5bda063d22b089d
       - name: Prepare isolated static preview
         run: |
           mkdir -p _site
@@ -30,15 +36,20 @@ jobs:
           cp -R source/creative-next/phase-2-preview _site/phase-2-preview
           # Versioned, isolated URL for an iPhone smoke test without reusing cached modules.
           mkdir -p _site/roundtrip-fix-r9
-          cp -R source/creative-next/phase-1a _site/roundtrip-fix-r9/phase-1a
-          cp -R source/creative-next/phase-1b _site/roundtrip-fix-r9/phase-1b
-          cp -R source/creative-next/phase-2-preview _site/roundtrip-fix-r9/phase-2-preview
+          cp -R source-r9/creative-next/phase-1a _site/roundtrip-fix-r9/phase-1a
+          cp -R source-r9/creative-next/phase-1b _site/roundtrip-fix-r9/phase-1b
+          cp -R source-r9/creative-next/phase-2-preview _site/roundtrip-fix-r9/phase-2-preview
           # Keep legacy and r9 previews intact; r10 uses a distinct
           # localStorage and IndexedDB namespace selected by URL path.
           mkdir -p _site/save-isolated-r10
-          cp -R source/creative-next/phase-1a _site/save-isolated-r10/phase-1a
-          cp -R source/creative-next/phase-1b _site/save-isolated-r10/phase-1b
-          cp -R source/creative-next/phase-2-preview _site/save-isolated-r10/phase-2-preview
+          cp -R source-r10/creative-next/phase-1a _site/save-isolated-r10/phase-1a
+          cp -R source-r10/creative-next/phase-1b _site/save-isolated-r10/phase-1b
+          cp -R source-r10/creative-next/phase-2-preview _site/save-isolated-r10/phase-2-preview
+          # New r11: report-only legacy compatibility diagnosis, own save space.
+          mkdir -p _site/legacy-audit-r11
+          cp -R source/creative-next/phase-1a _site/legacy-audit-r11/phase-1a
+          cp -R source/creative-next/phase-1b _site/legacy-audit-r11/phase-1b
+          cp -R source/creative-next/phase-2-preview _site/legacy-audit-r11/phase-2-preview
           # GitHub Pages may serve .mjs with an unsupported MIME type on iOS.
           # Publish module files as .js and update every local import reference.
           python3 - <<'PY'
@@ -63,6 +74,9 @@ jobs:
           test -f _site/save-isolated-r10/phase-2-preview/workspace-namespace.js
           test -f _site/save-isolated-r10/phase-2-preview/preview.js
           test -f _site/save-isolated-r10/phase-1b/core/journal-save.js
+          test -f _site/legacy-audit-r11/phase-1b/core/legacy-shape-audit.js
+          test -f _site/legacy-audit-r11/phase-2-preview/workspace-namespace.js
+          test -f _site/legacy-audit-r11/phase-2-preview/preview.js
           touch _site/.nojekyll
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5
