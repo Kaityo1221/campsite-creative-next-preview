@@ -42,6 +42,9 @@ jobs:
           # r15 Map First UI rehearsal, source-pinned and independent from r9-r14.
           git -C source fetch --depth 1 origin b7dff6e07f6133dc133902c2a0f95bc1a5269b38
           git -C source worktree add --detach ../source-map-u2 b7dff6e07f6133dc133902c2a0f95bc1a5269b38
+          # r16: generate visual-only source from exact production patch chain, never execute old storage logic.
+          git -C source fetch --depth 1 origin fe1877aa6d97793842f178c071eb65c97d1a4a59
+          git -C source worktree add --detach ../source-exact-r16 fe1877aa6d97793842f178c071eb65c97d1a4a59
       - name: Prepare isolated static preview
         run: |
           mkdir -p _site
@@ -82,6 +85,12 @@ jobs:
           cp -R source-r14/creative-next/phase-2-preview _site/iphone-ui-r14/phase-2-preview
           mkdir -p _site/map-ui-r15
           cp -R source-map-u2/creative-next/map-ui-preview/. _site/map-ui-r15/
+          # r16 is a STATIC, DISABLED-control snapshot for PO visual comparison only.
+          node source-exact-r16/creative-next/qa/build-original-ui-snapshot.cjs
+          mkdir -p _site/original-ui-r16/runtime _site/original-ui-r16/assets
+          cp source-exact-r16/creative-next/exact-ui-snapshot/index.html _site/original-ui-r16/runtime/index.html
+          cp source-exact-r16/assets/creative-mode-opening-final.webp _site/original-ui-r16/assets/creative-mode-opening-final.webp
+          cp source-exact-r16/assets/creative-mode-start-transition.webp _site/original-ui-r16/assets/creative-mode-start-transition.webp
           # GitHub Pages may serve .mjs with an unsupported MIME type on iOS.
           # Publish module files as .js and update every local import reference.
           python3 - <<'PY'
@@ -127,6 +136,9 @@ jobs:
           test -f _site/map-ui-r15/assets/pokestop.png
           test -f _site/map-ui-r15/assets/gym.png
           test -f _site/map-ui-r15/assets/powerspot.png
+          test -s _site/original-ui-r16/runtime/index.html
+          test -s _site/original-ui-r16/assets/creative-mode-opening-final.webp
+          if grep -iq '<script' _site/original-ui-r16/runtime/index.html; then exit 1; fi
           touch _site/.nojekyll
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5
