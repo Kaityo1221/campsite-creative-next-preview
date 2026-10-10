@@ -28,6 +28,8 @@ jobs:
           git -C source worktree add --detach ../source-r9 7d9628b25ff23b30f245f9e2e6f81ec647562a60
           git -C source fetch --depth 1 origin 7abdbf0d8e7cc52baa19c49db5bda063d22b089d
           git -C source worktree add --detach ../source-r10 7abdbf0d8e7cc52baa19c49db5bda063d22b089d
+          git -C source fetch --depth 1 origin bde901f4264a7d788b271038884ee5a6669b2964
+          git -C source worktree add --detach ../source-r11 bde901f4264a7d788b271038884ee5a6669b2964
       - name: Prepare isolated static preview
         run: |
           mkdir -p _site
@@ -47,9 +49,14 @@ jobs:
           cp -R source-r10/creative-next/phase-2-preview _site/save-isolated-r10/phase-2-preview
           # New r11: report-only legacy compatibility diagnosis, own save space.
           mkdir -p _site/legacy-audit-r11
-          cp -R source/creative-next/phase-1a _site/legacy-audit-r11/phase-1a
-          cp -R source/creative-next/phase-1b _site/legacy-audit-r11/phase-1b
-          cp -R source/creative-next/phase-2-preview _site/legacy-audit-r11/phase-2-preview
+          cp -R source-r11/creative-next/phase-1a _site/legacy-audit-r11/phase-1a
+          cp -R source-r11/creative-next/phase-1b _site/legacy-audit-r11/phase-1b
+          cp -R source-r11/creative-next/phase-2-preview _site/legacy-audit-r11/phase-2-preview
+          # r12 is winding-compatible but still fail-closed on missing owners.
+          mkdir -p _site/legacy-winding-r12
+          cp -R source/creative-next/phase-1a _site/legacy-winding-r12/phase-1a
+          cp -R source/creative-next/phase-1b _site/legacy-winding-r12/phase-1b
+          cp -R source/creative-next/phase-2-preview _site/legacy-winding-r12/phase-2-preview
           # GitHub Pages may serve .mjs with an unsupported MIME type on iOS.
           # Publish module files as .js and update every local import reference.
           python3 - <<'PY'
@@ -77,6 +84,10 @@ jobs:
           test -f _site/legacy-audit-r11/phase-1b/core/legacy-shape-audit.js
           test -f _site/legacy-audit-r11/phase-2-preview/workspace-namespace.js
           test -f _site/legacy-audit-r11/phase-2-preview/preview.js
+          test -f _site/legacy-winding-r12/phase-1b/core/stage-kmz.js
+          test -f _site/legacy-winding-r12/phase-1b/core/legacy-shape-audit.js
+          test -f _site/legacy-winding-r12/phase-2-preview/workspace-namespace.js
+          test -f _site/legacy-winding-r12/phase-2-preview/preview.js
           touch _site/.nojekyll
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5
