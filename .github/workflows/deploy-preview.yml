@@ -40,8 +40,8 @@ jobs:
           git -C source fetch --depth 1 origin e3e482634e7d40510aab16a5ec4622c44b9bb868
           git -C source worktree add --detach ../source-r14 e3e482634e7d40510aab16a5ec4622c44b9bb868
           # r15 Map First UI rehearsal, source-pinned and independent from r9-r14.
-          git -C source fetch --depth 1 origin 5b97b929b0f6b149303df3514a691677d245e474
-          git -C source worktree add --detach ../source-map-u2 5b97b929b0f6b149303df3514a691677d245e474
+          git -C source fetch --depth 1 origin 863114e37a93d767e594f708a751318de2df093d
+          git -C source worktree add --detach ../source-map-u2 863114e37a93d767e594f708a751318de2df093d
       - name: Prepare isolated static preview
         run: |
           mkdir -p _site
