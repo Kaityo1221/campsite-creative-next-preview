@@ -39,6 +39,9 @@ jobs:
           # Pin the first iPhone 90%-B layout build; do not mutate r13.
           git -C source fetch --depth 1 origin e3e482634e7d40510aab16a5ec4622c44b9bb868
           git -C source worktree add --detach ../source-r14 e3e482634e7d40510aab16a5ec4622c44b9bb868
+          # r15 Map First UI rehearsal, source-pinned and independent from r9-r14.
+          git -C source fetch --depth 1 origin 5b97b929b0f6b149303df3514a691677d245e474
+          git -C source worktree add --detach ../source-map-u2 5b97b929b0f6b149303df3514a691677d245e474
       - name: Prepare isolated static preview
         run: |
           mkdir -p _site
@@ -77,6 +80,8 @@ jobs:
           cp -R source-r14/creative-next/phase-1a _site/iphone-ui-r14/phase-1a
           cp -R source-r14/creative-next/phase-1b _site/iphone-ui-r14/phase-1b
           cp -R source-r14/creative-next/phase-2-preview _site/iphone-ui-r14/phase-2-preview
+          mkdir -p _site/map-ui-r15
+          cp -R source-map-u2/creative-next/map-ui-preview/. _site/map-ui-r15/
           # GitHub Pages may serve .mjs with an unsupported MIME type on iOS.
           # Publish module files as .js and update every local import reference.
           python3 - <<'PY'
@@ -116,6 +121,12 @@ jobs:
           test -f _site/iphone-ui-r14/phase-2-preview/preview.js
           test -f _site/iphone-ui-r14/phase-2-preview/workspace-namespace.js
           test -f _site/iphone-ui-r14/phase-1b/core/journal-save.js
+          test -f _site/map-ui-r15/index.html
+          test -f _site/map-ui-r15/ui.js
+          test -f _site/map-ui-r15/ui.css
+          test -f _site/map-ui-r15/assets/pokestop.png
+          test -f _site/map-ui-r15/assets/gym.png
+          test -f _site/map-ui-r15/assets/powerspot.png
           touch _site/.nojekyll
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5
