@@ -3,7 +3,7 @@ on:
   push:
     branches: [main]
   workflow_dispatch:
-  # Refresh iPhone preview from Creative Next latest isolated branch (2026-10-10); preserve .mjs to .js conversion.
+  # Refresh iPhone preview after Leaflet Canvas visibility fix (Creative Next e7d70b09, 2026-10-10).
 permissions:
   contents: read
   pages: write
