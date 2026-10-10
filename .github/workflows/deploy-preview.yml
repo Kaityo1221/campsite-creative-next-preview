@@ -8,6 +8,7 @@ permissions:
   contents: read
   pages: write
   id-token: write
+  statuses: write
 concurrency:
   group: creative-next-pages
   cancel-in-progress: true
@@ -27,6 +28,11 @@ jobs:
           cp -R source/creative-next/phase-1a _site/phase-1a
           cp -R source/creative-next/phase-1b _site/phase-1b
           cp -R source/creative-next/phase-2-preview _site/phase-2-preview
+          # Versioned, isolated URL for an iPhone smoke test without reusing cached modules.
+          mkdir -p _site/roundtrip-fix-r9
+          cp -R source/creative-next/phase-1a _site/roundtrip-fix-r9/phase-1a
+          cp -R source/creative-next/phase-1b _site/roundtrip-fix-r9/phase-1b
+          cp -R source/creative-next/phase-2-preview _site/roundtrip-fix-r9/phase-2-preview
           # GitHub Pages may serve .mjs with an unsupported MIME type on iOS.
           # Publish module files as .js and update every local import reference.
           python3 - <<'PY'
@@ -46,6 +52,8 @@ jobs:
           test -f _site/phase-2-preview/preview.js
           test -f _site/phase-1a/core/poi-store.js
           test -f _site/phase-1b/integration/isolated-editor-session.js
+          test -f _site/roundtrip-fix-r9/phase-2-preview/preview.js
+          test -f _site/roundtrip-fix-r9/phase-1b/core/activity-areas.js
           touch _site/.nojekyll
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5
@@ -58,3 +66,17 @@ jobs:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
+      - name: Report isolated preview deployment status
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+          DEPLOY_OUTCOME: ${{ steps.deployment.outcome }}
+        run: |
+          if [ "$DEPLOY_OUTCOME" = "success" ]; then
+            STATE=success
+            DESC="Versioned Creative Next isolated iPhone preview published"
+          else
+            STATE=failure
+            DESC="Versioned Creative Next isolated iPhone preview not published"
+          fi
+          gh api --method POST "repos/$GITHUB_REPOSITORY/statuses/$GITHUB_SHA" -f state="$STATE" -f context="creative-next/isolated-pages" -f description="$DESC"
