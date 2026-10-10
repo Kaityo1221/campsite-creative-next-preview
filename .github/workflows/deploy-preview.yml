@@ -30,12 +30,19 @@ jobs:
           git -C source worktree add --detach ../source-r10 7abdbf0d8e7cc52baa19c49db5bda063d22b089d
           git -C source fetch --depth 1 origin bde901f4264a7d788b271038884ee5a6669b2964
           git -C source worktree add --detach ../source-r11 bde901f4264a7d788b271038884ee5a6669b2964
+          # Pin the exact r12 revision last deployed on 2026-10-10 08:06Z.
+          git -C source fetch --depth 1 origin 488c2c21b054dd084fd80b98e7911f3e0c735f59
+          git -C source worktree add --detach ../source-r12 488c2c21b054dd084fd80b98e7911f3e0c735f59
+          # Newly verified r13 is immutable across future preview deployments.
+          git -C source fetch --depth 1 origin a1dcd68782de1cdfbc9bb162d0ac4b3a1f2a6639
+          git -C source worktree add --detach ../source-r13 a1dcd68782de1cdfbc9bb162d0ac4b3a1f2a6639
       - name: Prepare isolated static preview
         run: |
           mkdir -p _site
-          cp -R source/creative-next/phase-1a _site/phase-1a
-          cp -R source/creative-next/phase-1b _site/phase-1b
-          cp -R source/creative-next/phase-2-preview _site/phase-2-preview
+          # Preserve the unversioned root at its previous tested source, too.
+          cp -R source-r12/creative-next/phase-1a _site/phase-1a
+          cp -R source-r12/creative-next/phase-1b _site/phase-1b
+          cp -R source-r12/creative-next/phase-2-preview _site/phase-2-preview
           # Versioned, isolated URL for an iPhone smoke test without reusing cached modules.
           mkdir -p _site/roundtrip-fix-r9
           cp -R source-r9/creative-next/phase-1a _site/roundtrip-fix-r9/phase-1a
@@ -54,9 +61,14 @@ jobs:
           cp -R source-r11/creative-next/phase-2-preview _site/legacy-audit-r11/phase-2-preview
           # r12 is winding-compatible but still fail-closed on missing owners.
           mkdir -p _site/legacy-winding-r12
-          cp -R source/creative-next/phase-1a _site/legacy-winding-r12/phase-1a
-          cp -R source/creative-next/phase-1b _site/legacy-winding-r12/phase-1b
-          cp -R source/creative-next/phase-2-preview _site/legacy-winding-r12/phase-2-preview
+          cp -R source-r12/creative-next/phase-1a _site/legacy-winding-r12/phase-1a
+          cp -R source-r12/creative-next/phase-1b _site/legacy-winding-r12/phase-1b
+          cp -R source-r12/creative-next/phase-2-preview _site/legacy-winding-r12/phase-2-preview
+          # r13 adds synthetic-only iPhone safety diagnostics in a fresh workspace.
+          mkdir -p _site/iphone-safety-r13
+          cp -R source-r13/creative-next/phase-1a _site/iphone-safety-r13/phase-1a
+          cp -R source-r13/creative-next/phase-1b _site/iphone-safety-r13/phase-1b
+          cp -R source-r13/creative-next/phase-2-preview _site/iphone-safety-r13/phase-2-preview
           # GitHub Pages may serve .mjs with an unsupported MIME type on iOS.
           # Publish module files as .js and update every local import reference.
           python3 - <<'PY'
@@ -88,6 +100,10 @@ jobs:
           test -f _site/legacy-winding-r12/phase-1b/core/legacy-shape-audit.js
           test -f _site/legacy-winding-r12/phase-2-preview/workspace-namespace.js
           test -f _site/legacy-winding-r12/phase-2-preview/preview.js
+          test -f _site/iphone-safety-r13/phase-2-preview/iphone-safety-lab.html
+          test -f _site/iphone-safety-r13/phase-2-preview/iphone-safety-lab.js
+          test -f _site/iphone-safety-r13/phase-2-preview/workspace-namespace.js
+          test -f _site/iphone-safety-r13/phase-1b/core/journal-save.js
           touch _site/.nojekyll
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5
