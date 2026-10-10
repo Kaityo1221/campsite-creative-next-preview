@@ -33,6 +33,12 @@ jobs:
           cp -R source/creative-next/phase-1a _site/roundtrip-fix-r9/phase-1a
           cp -R source/creative-next/phase-1b _site/roundtrip-fix-r9/phase-1b
           cp -R source/creative-next/phase-2-preview _site/roundtrip-fix-r9/phase-2-preview
+          # Keep legacy and r9 previews intact; r10 uses a distinct
+          # localStorage and IndexedDB namespace selected by URL path.
+          mkdir -p _site/save-isolated-r10
+          cp -R source/creative-next/phase-1a _site/save-isolated-r10/phase-1a
+          cp -R source/creative-next/phase-1b _site/save-isolated-r10/phase-1b
+          cp -R source/creative-next/phase-2-preview _site/save-isolated-r10/phase-2-preview
           # GitHub Pages may serve .mjs with an unsupported MIME type on iOS.
           # Publish module files as .js and update every local import reference.
           python3 - <<'PY'
@@ -54,6 +60,9 @@ jobs:
           test -f _site/phase-1b/integration/isolated-editor-session.js
           test -f _site/roundtrip-fix-r9/phase-2-preview/preview.js
           test -f _site/roundtrip-fix-r9/phase-1b/core/activity-areas.js
+          test -f _site/save-isolated-r10/phase-2-preview/workspace-namespace.js
+          test -f _site/save-isolated-r10/phase-2-preview/preview.js
+          test -f _site/save-isolated-r10/phase-1b/core/journal-save.js
           touch _site/.nojekyll
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5
