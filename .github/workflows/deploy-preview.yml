@@ -36,6 +36,9 @@ jobs:
           # Newly verified r13 is immutable across future preview deployments.
           git -C source fetch --depth 1 origin a1dcd68782de1cdfbc9bb162d0ac4b3a1f2a6639
           git -C source worktree add --detach ../source-r13 a1dcd68782de1cdfbc9bb162d0ac4b3a1f2a6639
+          # Pin the first iPhone 90%-B layout build; do not mutate r13.
+          git -C source fetch --depth 1 origin e3e482634e7d40510aab16a5ec4622c44b9bb868
+          git -C source worktree add --detach ../source-r14 e3e482634e7d40510aab16a5ec4622c44b9bb868
       - name: Prepare isolated static preview
         run: |
           mkdir -p _site
@@ -69,6 +72,11 @@ jobs:
           cp -R source-r13/creative-next/phase-1a _site/iphone-safety-r13/phase-1a
           cp -R source-r13/creative-next/phase-1b _site/iphone-safety-r13/phase-1b
           cp -R source-r13/creative-next/phase-2-preview _site/iphone-safety-r13/phase-2-preview
+          # r14 iPhone UI-only test: own URL and storage namespace; r9-r13 remain pinned.
+          mkdir -p _site/iphone-ui-r14
+          cp -R source-r14/creative-next/phase-1a _site/iphone-ui-r14/phase-1a
+          cp -R source-r14/creative-next/phase-1b _site/iphone-ui-r14/phase-1b
+          cp -R source-r14/creative-next/phase-2-preview _site/iphone-ui-r14/phase-2-preview
           # GitHub Pages may serve .mjs with an unsupported MIME type on iOS.
           # Publish module files as .js and update every local import reference.
           python3 - <<'PY'
@@ -104,6 +112,10 @@ jobs:
           test -f _site/iphone-safety-r13/phase-2-preview/iphone-safety-lab.js
           test -f _site/iphone-safety-r13/phase-2-preview/workspace-namespace.js
           test -f _site/iphone-safety-r13/phase-1b/core/journal-save.js
+          test -f _site/iphone-ui-r14/phase-2-preview/index.html
+          test -f _site/iphone-ui-r14/phase-2-preview/preview.js
+          test -f _site/iphone-ui-r14/phase-2-preview/workspace-namespace.js
+          test -f _site/iphone-ui-r14/phase-1b/core/journal-save.js
           touch _site/.nojekyll
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5
