@@ -3,7 +3,7 @@ on:
   push:
     branches: [main]
   workflow_dispatch:
-  # Refresh preview after Creative Next Phase 1B dependency diagnostics v4.
+  # Refresh iPhone preview from Creative Next latest isolated branch (2026-10-10); preserve .mjs to .js conversion.
 permissions:
   contents: read
   pages: write
