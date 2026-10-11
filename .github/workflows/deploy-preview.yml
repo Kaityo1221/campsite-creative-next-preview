@@ -78,6 +78,11 @@ jobs:
           git clone --depth 1 --branch feature/creative-next-ui-exact-parity-20261010 https://github.com/Kaityo1221/Campsite-Design-Tool-JP.git source-r24
           git -C source-r24 fetch --depth 1 origin a6b5490c5f5b637ba4393cda259f6e5e87476511
           git -C source-r24 checkout a6b5490c5f5b637ba4393cda259f6e5e87476511
+      - name: Fetch r25 original map controls
+        run: |
+          git clone --depth 1 --branch feature/creative-next-ui-exact-parity-20261010 https://github.com/Kaityo1221/Campsite-Design-Tool-JP.git source-r25
+          git -C source-r25 fetch --depth 1 origin 4153b7d62d4d7b2d0049664579ec3a2f9e2b47f1
+          git -C source-r25 checkout 4153b7d62d4d7b2d0049664579ec3a2f9e2b47f1
       - name: Prepare isolated static preview
         run: |
           mkdir -p _site
@@ -187,6 +192,18 @@ jobs:
           cp -R source-r24/creative-next/phase-1a _site/original-ui-r24/phase-1a
           cp -R source-r24/creative-next/phase-1b _site/original-ui-r24/phase-1b
           cp source-r24/assets/creative-mode-opening-final.webp _site/original-ui-r24/assets/creative-mode-opening-final.webp
+          # r25 map-control interaction rehearsal. r16-r24 remain untouched and commit-pinned.
+          node --check source-r25/creative-next/original-ui-r25/r25-map-controls.mjs
+          node --check source-r25/creative-next/integration/creative-next-original-leaflet-overlay.mjs
+          node source-r25/creative-next/qa/current-creative-ui-source-parity.cjs
+          node source-r25/creative-next/qa/build-original-ui-snapshot.cjs
+          mkdir -p _site/original-ui-r25/original-ui-r25 _site/original-ui-r25/assets
+          cp source-r25/creative-next/original-ui-r25/index.html _site/original-ui-r25/original-ui-r25/index.html
+          cp source-r25/creative-next/original-ui-r25/r25-map-controls.mjs _site/original-ui-r25/original-ui-r25/r25-map-controls.mjs
+          cp -R source-r25/creative-next/integration _site/original-ui-r25/integration
+          cp -R source-r25/creative-next/phase-1a _site/original-ui-r25/phase-1a
+          cp -R source-r25/creative-next/phase-1b _site/original-ui-r25/phase-1b
+          cp source-r25/assets/creative-mode-opening-final.webp _site/original-ui-r25/assets/creative-mode-opening-final.webp
           # GitHub Pages may serve .mjs with an unsupported MIME type on iOS.
           # Publish module files as .js and update every local import reference.
           python3 - <<'PY'
@@ -274,6 +291,37 @@ jobs:
           assert len(seen)>8, 'R24_MODULE_GRAPH_NOT_TRAVERSED'
           print('PASS: r24 browser import graph complete',len(seen),'modules; picker enabled; start gated')
           PYR24
+          # Assert r25 reuses r24 visual HTML exactly; only module name/touch-action change.
+          python3 - <<'PYR25'
+          from pathlib import Path
+          import re
+          previous=Path('_site/original-ui-r24/original-ui-r24/index.html').read_text(encoding='utf-8')
+          root=Path('_site/original-ui-r25')
+          current=(root/'original-ui-r25/index.html').read_text(encoding='utf-8')
+          style='<style id="cmNextTapGuard">button,.filebar{touch-action:manipulation!important;-webkit-tap-highlight-color:transparent}</style>'
+          assert style in current,'R25_MISSING_IOS_TAP_GUARD'
+          compared=current.replace(style,'').replace('./r25-map-controls.js','./r22-readonly-map.js')
+          assert compared==previous,'R25_APPROVED_VISUAL_HTML_DIFFERENCE'
+          assert (root/'original-ui-r25/r25-map-controls.js').is_file()
+          assert re.search(r'<input[^>]*id="entryFile"[^>]*>',current) and not re.search(r'<input[^>]*id="entryFile"[^>]*\sdisabled\b',current), 'R25_FILE_INPUT_INVALID'
+          pending=[root/'original-ui-r25/r25-map-controls.js']
+          visited=set()
+          imp=re.compile(r'''(?m)^\s*(?:import|export)\s+(?:[^\n]*?\sfrom\s*)?['"](\.[^'"]+)['"]''')
+          while pending:
+              source=pending.pop()
+              if source in visited: continue
+              assert source.is_file(),f'R25_IMPORT_MISSING: {source}'
+              visited.add(source)
+              for spec in imp.findall(source.read_text(encoding='utf-8')):
+                  path=(source.parent/spec).resolve()
+                  assert path.is_relative_to(root.resolve()),'R25_MODULE_OUTSIDE_PREVIEW'
+                  pending.append(path)
+          assert len(visited)>8,'R25_DEPENDENCY_GRAPH_TOO_SMALL'
+          controls=(root/'original-ui-r25/r25-map-controls.js').read_text(encoding='utf-8')
+          for symbol in ("backToEntry","mapToggle","layerButton","circleButton","toolbox","downloadKmz","doubleClickZoom:false","ruler","beginAdd"):
+              assert symbol in controls,f'R25_CONTROL_UNWIRED: {symbol}'
+          print('PASS: r25 exact approved visual parity, mobile tap guard, complete',len(visited),'module graph and controls')
+          PYR25
           touch _site/.nojekyll
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5
