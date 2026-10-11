@@ -93,6 +93,11 @@ jobs:
           git clone --depth 1 --branch feature/creative-next-ui-exact-parity-20261010 https://github.com/Kaityo1221/Campsite-Design-Tool-JP.git source-r27
           git -C source-r27 fetch --depth 1 origin 9f0f1af6caffd74366c88e9e83f2a42a863750ec
           git -C source-r27 checkout 9f0f1af6caffd74366c88e9e83f2a42a863750ec
+      - name: Fetch r28 new POI sheet from production visuals
+        run: |
+          git clone --depth 1 --branch feature/creative-next-ui-exact-parity-20261010 https://github.com/Kaityo1221/Campsite-Design-Tool-JP.git source-r28
+          git -C source-r28 fetch --depth 1 origin f4af876ea7708e350cc76d69948bc7307f7102b3
+          git -C source-r28 checkout f4af876ea7708e350cc76d69948bc7307f7102b3
       - name: Prepare isolated static preview
         run: |
           mkdir -p _site
@@ -242,6 +247,22 @@ jobs:
           cp -R source-r27/creative-next/phase-1a _site/original-ui-r27/phase-1a
           cp -R source-r27/creative-next/phase-1b _site/original-ui-r27/phase-1b
           cp source-r27/assets/creative-mode-opening-final.webp _site/original-ui-r27/assets/creative-mode-opening-final.webp
+          # r28: only NEW POIs editable, original v6/v71 bottom-sheet visual classes.
+          node --check source-r28/creative-next/original-ui-r28/r28-poi-editor.mjs
+          node --check source-r28/creative-next/integration/creative-next-original-new-poi-sheet.mjs
+          node --test source-r28/creative-next/qa/r28-new-poi-sheet.test.mjs
+          node --test source-r28/creative-next/qa/r26-ios-double-tap.test.cjs
+          node source-r28/creative-next/qa/current-creative-ui-source-parity.cjs
+          node source-r28/creative-next/qa/build-original-ui-snapshot.cjs
+          mkdir -p _site/original-ui-r28/original-ui-r28 _site/original-ui-r28/assets
+          cp source-r28/creative-next/original-ui-r28/index.html _site/original-ui-r28/original-ui-r28/index.html
+          cp source-r28/creative-next/original-ui-r28/r28-poi-editor.mjs _site/original-ui-r28/original-ui-r28/r28-poi-editor.mjs
+          cp source-r28/creative-next/original-ui-r28/r28-ios-tap-guard.js _site/original-ui-r28/original-ui-r28/r28-ios-tap-guard.js
+          cp -R source-r28/creative-next/integration _site/original-ui-r28/integration
+          cp -R source-r28/creative-next/phase-1a _site/original-ui-r28/phase-1a
+          cp -R source-r28/creative-next/phase-1b _site/original-ui-r28/phase-1b
+          cp source-r28/assets/creative-mode-opening-final.webp _site/original-ui-r28/assets/creative-mode-opening-final.webp
+          cp source-r28/creative/assets/{pokestop,gym,powerspot}.png _site/original-ui-r28/assets/
           # GitHub Pages may serve .mjs with an unsupported MIME type on iOS.
           # Publish module files as .js and update every local import reference.
           python3 - <<'PY'
@@ -422,6 +443,43 @@ jobs:
           assert 'textContent=record.title' in popup and "type:'edit'" in popup and "type:'delete'" in popup and "type:'move'" not in popup,'R27_POPUP_SAFE_BOUNDARY'
           print('PASS: r27 original UI visual parity, popup safety and',len(seen),'browser modules')
           PYR27
+          python3 - <<'PYR28'
+          from pathlib import Path
+          import re
+          previous=Path('_site/original-ui-r26/original-ui-r26/index.html').read_text(encoding='utf-8')
+          root=Path('_site/original-ui-r28')
+          current=(root/'original-ui-r28/index.html').read_text(encoding='utf-8')
+          sheet=re.search(r'<style id="cmNextR28OriginalSheetStyle">([\s\S]*?)</style>',current)
+          assert sheet,'R28_SOURCE_SHEET_CSS_MISSING'
+          v6=Path('source-r28/creative/runtime/creative-patches-v6-intuitive.js').read_text(encoding='utf-8')
+          css=v6[v6.index('.cm-sheet{'):v6.index('.cm-list,',v6.index('.cm-sheet{'))]
+          assert sheet.group(1).startswith(css),'R28_ORIGINAL_SHEET_CSS_NOT_REUSED'
+          normalized=current.replace(sheet.group(0),'').replace('r28-ios-tap-guard.js','r26-ios-tap-guard.js').replace('r28-poi-editor.js','r25-map-controls.js')
+          assert normalized==previous,'R28_UNAPPROVED_VISUAL_SHELL_DIFFERENCE'
+          assert (root/'original-ui-r28/r28-ios-tap-guard.js').is_file()
+          guard=(root/'original-ui-r28/r28-ios-tap-guard.js').read_text(encoding='utf-8')
+          assert '.cm-sheet button' in guard and 'passive:false' in guard,'R28_SAFARI_GESTURE_REGRESSION'
+          for name in ('pokestop','gym','powerspot'):
+              assert (root/'assets'/f'{name}.png').is_file(), f'R28_MISSING_TYPE_IMAGE:{name}'
+          popup=(root/'integration/creative-next-original-new-poi-sheet.js').read_text(encoding='utf-8')
+          assert "record.role!=='new'" in popup and '既存POI（閲覧のみ）' in popup,'R28_EXISTING_POI_MUST_BE_READ_ONLY'
+          assert 'maxLength=maxLength' in popup and "'名前（30文字まで）'" in popup and "'メモ（50文字まで）'" in popup,'R28_INPUT_RULES'
+          assert 'localStorage' not in popup and 'indexedDB' not in popup,'R28_NO_LEGACY_STORAGE'
+          pending=[root/'original-ui-r28/r28-poi-editor.js']
+          seen=set()
+          imports=re.compile(r'''(?m)^\s*(?:import|export)\s+(?:[^\n]*?\sfrom\s*)?['"](\.[^'"]+)['"]''')
+          while pending:
+              source=pending.pop()
+              if source in seen:continue
+              assert source.is_file(),f'R28_MISSING_JS_IMPORT: {source}'
+              seen.add(source)
+              for relative in imports.findall(source.read_text(encoding='utf-8')):
+                  candidate=(source.parent/relative).resolve()
+                  assert candidate.is_relative_to(root.resolve()),'R28_IMPORT_OUTSIDE_PREVIEW'
+                  pending.append(candidate)
+          assert len(seen)>=20,'R28_JS_GRAPH_INCOMPLETE'
+          print('PASS: r28 only new POIs editable, source sheet CSS exact, Safari guard,',len(seen),'modules')
+          PYR28
           touch _site/.nojekyll
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5
