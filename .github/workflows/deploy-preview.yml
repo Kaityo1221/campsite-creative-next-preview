@@ -103,6 +103,11 @@ jobs:
           git clone --depth 1 --branch feature/creative-next-ui-exact-parity-20261010 https://github.com/Kaityo1221/Campsite-Design-Tool-JP.git source-r29
           git -C source-r29 fetch --depth 1 origin e88f2783d3a1d495f46b4f0b66a4c7a1c0b9ea7b
           git -C source-r29 checkout e88f2783d3a1d495f46b4f0b66a4c7a1c0b9ea7b
+      - name: Fetch r30 approved plus FAB and centered move UI
+        run: |
+          git clone --depth 1 --branch feature/creative-next-ui-exact-parity-20261010 https://github.com/Kaityo1221/Campsite-Design-Tool-JP.git source-r30
+          git -C source-r30 fetch --depth 1 origin 2d9f0c472a0263fd4b68044b76bb2a80bb265289
+          git -C source-r30 checkout 2d9f0c472a0263fd4b68044b76bb2a80bb265289
       - name: Prepare isolated static preview
         run: |
           mkdir -p _site
@@ -285,6 +290,26 @@ jobs:
           cp -R source-r29/creative-next/phase-1b _site/original-ui-r29/phase-1b
           cp source-r29/assets/creative-mode-opening-final.webp _site/original-ui-r29/assets/creative-mode-opening-final.webp
           cp source-r29/creative/assets/{pokestop,gym,powerspot}.png _site/original-ui-r29/assets/
+          # r30: production v6 FAB DOM, base-v7 cyan center crosshair placement, no old scripts.
+          node --check source-r30/creative-next/original-ui-r30/r30-poi-editor.mjs
+          node --check source-r30/creative-next/integration/original-placement-r30.mjs
+          node --check source-r30/creative-next/integration/original-optional-circles-r30.mjs
+          node --test source-r30/creative-next/qa/r30-placement-original-ui.test.mjs
+          node --test source-r30/creative-next/qa/r30-optional-circles.test.mjs
+          node --test source-r30/creative-next/qa/r29-layer-counts.test.mjs
+          node --test source-r30/creative-next/qa/r28-new-poi-sheet.test.mjs
+          node --test source-r30/creative-next/qa/r26-ios-double-tap.test.cjs
+          node source-r30/creative-next/qa/current-creative-ui-source-parity.cjs
+          node source-r30/creative-next/qa/build-original-ui-snapshot.cjs
+          mkdir -p _site/original-ui-r30/original-ui-r30 _site/original-ui-r30/assets
+          cp source-r30/creative-next/original-ui-r30/index.html _site/original-ui-r30/original-ui-r30/index.html
+          cp source-r30/creative-next/original-ui-r30/r30-poi-editor.mjs _site/original-ui-r30/original-ui-r30/r30-poi-editor.mjs
+          cp source-r30/creative-next/original-ui-r30/r30-ios-tap-guard.js _site/original-ui-r30/original-ui-r30/r30-ios-tap-guard.js
+          cp -R source-r30/creative-next/integration _site/original-ui-r30/integration
+          cp -R source-r30/creative-next/phase-1a _site/original-ui-r30/phase-1a
+          cp -R source-r30/creative-next/phase-1b _site/original-ui-r30/phase-1b
+          cp source-r30/assets/creative-mode-opening-final.webp _site/original-ui-r30/assets/creative-mode-opening-final.webp
+          cp source-r30/creative/assets/{pokestop,gym,powerspot}.png _site/original-ui-r30/assets/
           # GitHub Pages may serve .mjs with an unsupported MIME type on iOS.
           # Publish module files as .js and update every local import reference.
           python3 - <<'PY'
@@ -531,6 +556,39 @@ jobs:
           assert len(seen)>=25,f'R29_MODULE_GRAPH_TOO_SMALL:{len(seen)}'
           print('PASS: r29 production visual parity, layer labels, readonly source, Safari isolation,',len(seen),'modules')
           PYR29
+          python3 - <<'PYR30'
+          from pathlib import Path
+          import re
+          old=Path('_site/original-ui-r29/original-ui-r29/index.html').read_text(encoding='utf-8')
+          root=Path('_site/original-ui-r30')
+          new=(root/'original-ui-r30/index.html').read_text(encoding='utf-8')
+          normalized=new.replace('r30-ios-tap-guard.js','r29-ios-tap-guard.js').replace('r30-poi-editor.js','r29-poi-editor.js')
+          assert old==normalized,'R30_APPROVED_VISUAL_SHELL_DIFFERENCE'
+          assert (root/'original-ui-r30/r30-ios-tap-guard.js').is_file(),'R30_SAFARI_GUARD_MISSING'
+          placement=(root/'integration/original-placement-r30.js').read_text(encoding='utf-8')
+          assert "wrap.className='cm-fab-wrap'" in placement and "fab.id='cmAddFab'" in placement, 'R30_ORIGINAL_FAB_MISSING'
+          assert "preview-dot move-aim" in placement and "radius:50,color:'#13b8d4'" in placement, 'R30_CYAN_CROSSHAIR_MISSING'
+          assert "poi.role!=='new'" in placement and "live.role!=='new'" in placement, 'R30_EXISTING_POI_MOVE_LOCK_MISSING'
+          assert not any(s in placement for s in ('localStorage','sessionStorage','indexedDB')), 'R30_LEGACY_STORAGE_ACCESS'
+          shell=(root/'original-ui-r30/r30-poi-editor.js').read_text(encoding='utf-8')
+          assert "placement=createOriginalPlacementR30(" in shell and "map.createPane('placement')" in shell, 'R30_PLACEMENT_NOT_ATTACHED'
+          assert "onMoveRequest:id=>{placement?.beginMove(id);}" in shell, 'R30_SHEET_MOVE_NOT_ATTACHED'
+          assert "globalThis.prompt(" not in shell and "function addAt(" not in shell, 'R30_LEGACY_PROMPT_ADD_REMAINS'
+          pending=[root/'original-ui-r30/r30-poi-editor.js']
+          seen=set()
+          imports=re.compile(r'''(?m)^\s*(?:import|export)\s+(?:[^\n]*?\sfrom\s*)?['"](\.[^'"]+)['"]''')
+          while pending:
+              src=pending.pop()
+              if src in seen: continue
+              assert src.is_file(),f'R30_MODULE_NOT_DEPLOYED:{src}'
+              seen.add(src)
+              for rel in imports.findall(src.read_text(encoding='utf-8')):
+                  dest=(src.parent/rel).resolve()
+                  assert dest.is_relative_to(root.resolve()), 'R30_DEPENDENCY_OUTSIDE_PREVIEW'
+                  pending.append(dest)
+          assert len(seen)>=27, f'R30_MODULE_GRAPH_INCOMPLETE:{len(seen)}'
+          print('PASS: r30 approved visual UI, plus FAB, centered cyan crosshair and',len(seen),'browser modules')
+          PYR30
           touch _site/.nojekyll
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5
