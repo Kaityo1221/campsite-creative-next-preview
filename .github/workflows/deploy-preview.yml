@@ -73,6 +73,11 @@ jobs:
           git clone --depth 1 --branch feature/creative-next-ui-exact-parity-20261010 https://github.com/Kaityo1221/Campsite-Design-Tool-JP.git source-r23
           git -C source-r23 fetch --depth 1 origin 54563851baf4b279411595f01a2b856891760160
           git -C source-r23 checkout 54563851baf4b279411595f01a2b856891760160
+      - name: Fetch r24 engine module graph repair
+        run: |
+          git clone --depth 1 --branch feature/creative-next-ui-exact-parity-20261010 https://github.com/Kaityo1221/Campsite-Design-Tool-JP.git source-r24
+          git -C source-r24 fetch --depth 1 origin a6b5490c5f5b637ba4393cda259f6e5e87476511
+          git -C source-r24 checkout a6b5490c5f5b637ba4393cda259f6e5e87476511
       - name: Prepare isolated static preview
         run: |
           mkdir -p _site
@@ -172,6 +177,16 @@ jobs:
           cp -R source-r23/creative-next/integration _site/original-ui-r23/integration
           cp -R source-r23/creative-next/phase-1b _site/original-ui-r23/phase-1b
           cp source-r23/assets/creative-mode-opening-final.webp _site/original-ui-r23/assets/creative-mode-opening-final.webp
+          # New r24 only: include required Phase 1-A dependency missing from r20-r23.
+          node source-r24/creative-next/qa/current-creative-ui-source-parity.cjs
+          node source-r24/creative-next/qa/build-original-ui-snapshot.cjs
+          mkdir -p _site/original-ui-r24/original-ui-r24 _site/original-ui-r24/assets
+          cp source-r24/creative-next/original-ui-r22/index.html _site/original-ui-r24/original-ui-r24/index.html
+          cp source-r24/creative-next/original-ui-r22/r22-readonly-map.mjs _site/original-ui-r24/original-ui-r24/r22-readonly-map.mjs
+          cp -R source-r24/creative-next/integration _site/original-ui-r24/integration
+          cp -R source-r24/creative-next/phase-1a _site/original-ui-r24/phase-1a
+          cp -R source-r24/creative-next/phase-1b _site/original-ui-r24/phase-1b
+          cp source-r24/assets/creative-mode-opening-final.webp _site/original-ui-r24/assets/creative-mode-opening-final.webp
           # GitHub Pages may serve .mjs with an unsupported MIME type on iOS.
           # Publish module files as .js and update every local import reference.
           python3 - <<'PY'
@@ -230,6 +245,35 @@ jobs:
           if grep -iq '<script' _site/original-ui-r16/runtime/index.html; then exit 1; fi
           # Inspect the final, post-extension-rewrite deployed HTML, not only its source template.
           node -e 'const fs=require("fs");const h=fs.readFileSync("_site/original-ui-r23/original-ui-r23/index.html","utf8");const input=h.match(/<input[^>]*id="entryFile"[^>]*>/i)?.[0];const start=h.match(/<button[^>]*id="startButton"[^>]*>/i)?.[0];if(!input||/\sdisabled\b/i.test(input)||!start||!/\sdisabled\b/i.test(start)){throw Error("R23_NATIVE_FILE_PICKER_CI_GATE_FAILED")};console.log("PASS: r23 picker enabled and start remains disabled")'
+          # r24 must ship a complete browser ESM dependency graph, including Phase 1-A.
+          python3 - <<'PYR24'
+          from pathlib import Path
+          import re
+          root=Path('_site/original-ui-r24')
+          html=(root/'original-ui-r24/index.html').read_text(encoding='utf-8')
+          file_input=re.search(r'<input\\b[^>]*\\bid=["\\\']entryFile["\\\'][^>]*>',html,re.I)
+          start=re.search(r'<button\\b[^>]*\\bid=["\\\']startButton["\\\'][^>]*>',html,re.I)
+          assert file_input and not re.search(r'\\sdisabled\\b',file_input.group(0),re.I), 'R24_ENTRY_FILE_DISABLED'
+          assert start and re.search(r'\\sdisabled\\b',start.group(0),re.I), 'R24_START_MUST_REQUIRE_REVIEW'
+          assert (root/'phase-1a/core/poi-store.js').is_file(), 'R24_MISSING_POI_STORE'
+          entry=root/'original-ui-r24/r22-readonly-map.js'
+          pending=[entry]
+          seen=set()
+          imports=re.compile(r'(?m)^\\s*(?:import|export)\\s+(?:[^\\n]*?\\sfrom\\s*)?["\\\'](\\.[^"\\\']+)["\\\']')
+          while pending:
+              source=pending.pop()
+              if source in seen: continue
+              assert source.is_file(), f'R24_MISSING_MODULE: {source}'
+              seen.add(source)
+              body=source.read_text(encoding='utf-8')
+              for spec in imports.findall(body):
+                  target=(source.parent/spec).resolve()
+                  assert target.is_file(), f'R24_MISSING_IMPORT: {source} => {spec}'
+                  assert target.is_relative_to(root.resolve()), f'R24_IMPORT_OUTSIDE_ISOLATED_TREE: {source}'
+                  pending.append(target)
+          assert len(seen)>8, 'R24_MODULE_GRAPH_NOT_TRAVERSED'
+          print('PASS: r24 browser import graph complete',len(seen),'modules; picker enabled; start gated')
+          PYR24
           touch _site/.nojekyll
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5
