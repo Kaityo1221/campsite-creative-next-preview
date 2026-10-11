@@ -56,10 +56,12 @@ jobs:
       - name: Fetch isolated r20
         run: |
           git clone --depth 1 --branch feature/creative-next-ui-exact-parity-20261010 https://github.com/Kaityo1221/Campsite-Design-Tool-JP.git source-r20
+          git -C source-r20 fetch --depth 1 origin 84782ec579ed7459690cd4c28db877a0f903d511
           git -C source-r20 checkout 84782ec579ed7459690cd4c28db877a0f903d511
       - name: Fetch native file input Safari fix
         run: |
           git clone --depth 1 --branch feature/creative-next-ui-exact-parity-20261010 https://github.com/Kaityo1221/Campsite-Design-Tool-JP.git source-r21
+          git -C source-r21 fetch --depth 1 origin 546cbfec01a920bd63752b4c8e19719e0075a585
           git -C source-r21 checkout 546cbfec01a920bd63752b4c8e19719e0075a585
       - name: Prepare isolated static preview
         run: |
