@@ -96,8 +96,8 @@ jobs:
       - name: Fetch r28 new POI sheet from production visuals
         run: |
           git clone --depth 1 --branch feature/creative-next-ui-exact-parity-20261010 https://github.com/Kaityo1221/Campsite-Design-Tool-JP.git source-r28
-          git -C source-r28 fetch --depth 1 origin f4af876ea7708e350cc76d69948bc7307f7102b3
-          git -C source-r28 checkout f4af876ea7708e350cc76d69948bc7307f7102b3
+          git -C source-r28 fetch --depth 1 origin dbf34af4e3c478dc6ddd179f0da9ba65b787129f
+          git -C source-r28 checkout dbf34af4e3c478dc6ddd179f0da9ba65b787129f
       - name: Prepare isolated static preview
         run: |
           mkdir -p _site
