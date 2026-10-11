@@ -88,6 +88,11 @@ jobs:
           git clone --depth 1 --branch feature/creative-next-ui-exact-parity-20261010 https://github.com/Kaityo1221/Campsite-Design-Tool-JP.git source-r26
           git -C source-r26 fetch --depth 1 origin 6bc6a14263ffc30c8cbc8ead96b421e1e48afe38
           git -C source-r26 checkout 6bc6a14263ffc30c8cbc8ead96b421e1e48afe38
+      - name: Fetch r27 original POI popup editor
+        run: |
+          git clone --depth 1 --branch feature/creative-next-ui-exact-parity-20261010 https://github.com/Kaityo1221/Campsite-Design-Tool-JP.git source-r27
+          git -C source-r27 fetch --depth 1 origin 9f0f1af6caffd74366c88e9e83f2a42a863750ec
+          git -C source-r27 checkout 9f0f1af6caffd74366c88e9e83f2a42a863750ec
       - name: Prepare isolated static preview
         run: |
           mkdir -p _site
@@ -222,6 +227,21 @@ jobs:
           cp -R source-r26/creative-next/phase-1a _site/original-ui-r26/phase-1a
           cp -R source-r26/creative-next/phase-1b _site/original-ui-r26/phase-1b
           cp source-r26/assets/creative-mode-opening-final.webp _site/original-ui-r26/assets/creative-mode-opening-final.webp
+          # r27 is additive: do not modify the passing r26 preview or approved visual shell.
+          node --check source-r27/creative-next/original-ui-r27/r27-poi-editor.mjs
+          node --check source-r27/creative-next/integration/creative-next-original-poi-popup.mjs
+          node --test source-r27/creative-next/qa/r27-original-poi-popup.test.mjs
+          node --test source-r27/creative-next/qa/r26-ios-double-tap.test.cjs
+          node source-r27/creative-next/qa/current-creative-ui-source-parity.cjs
+          node source-r27/creative-next/qa/build-original-ui-snapshot.cjs
+          mkdir -p _site/original-ui-r27/original-ui-r27 _site/original-ui-r27/assets
+          cp source-r27/creative-next/original-ui-r27/index.html _site/original-ui-r27/original-ui-r27/index.html
+          cp source-r27/creative-next/original-ui-r27/r27-poi-editor.mjs _site/original-ui-r27/original-ui-r27/r27-poi-editor.mjs
+          cp source-r27/creative-next/original-ui-r27/r27-ios-tap-guard.js _site/original-ui-r27/original-ui-r27/r27-ios-tap-guard.js
+          cp -R source-r27/creative-next/integration _site/original-ui-r27/integration
+          cp -R source-r27/creative-next/phase-1a _site/original-ui-r27/phase-1a
+          cp -R source-r27/creative-next/phase-1b _site/original-ui-r27/phase-1b
+          cp source-r27/assets/creative-mode-opening-final.webp _site/original-ui-r27/assets/creative-mode-opening-final.webp
           # GitHub Pages may serve .mjs with an unsupported MIME type on iOS.
           # Publish module files as .js and update every local import reference.
           python3 - <<'PY'
@@ -371,6 +391,37 @@ jobs:
           assert len(seen)>8,'R26_MODULE_GRAPH_TOO_SMALL'
           print('PASS: r26 visual parity, browser gesture guard, complete',len(seen),'module graph')
           PYR26
+          python3 - <<'PYR27'
+          from pathlib import Path
+          import re
+          previous=Path('_site/original-ui-r26/original-ui-r26/index.html').read_text(encoding='utf-8')
+          root=Path('_site/original-ui-r27')
+          current=(root/'original-ui-r27/index.html').read_text(encoding='utf-8')
+          added='<style id="cmNextR27PopupTapGuard">.popup-form button,.popup-form select{touch-action:none!important;-webkit-user-select:none!important;user-select:none!important;-webkit-touch-callout:none!important}</style>'
+          normalized=current.replace(added,'').replace('r27-ios-tap-guard.js','r26-ios-tap-guard.js').replace('r27-poi-editor.js','r25-map-controls.js')
+          assert added in current and normalized==previous, 'R27_APPROVED_VISUAL_HTML_MISMATCH'
+          assert current.index('r27-ios-tap-guard.js')<current.index('r27-poi-editor.js'),'R27_GUARD_ORDER'
+          assert (root/'original-ui-r27/r27-ios-tap-guard.js').is_file(),'R27_IOS_GUARD_MISSING'
+          src=(root/'original-ui-r27/r27-ios-tap-guard.js').read_text(encoding='utf-8')
+          assert '.popup-form button' in src and 'passive:false' in src,'R27_POPUP_DOUBLE_TAP_GUARD'
+          entry=root/'original-ui-r27/r27-poi-editor.js'
+          pending=[entry]
+          seen=set()
+          imp=re.compile(r'''(?m)^\s*(?:import|export)\s+(?:[^\n]*?\sfrom\s*)?['"](\.[^'"]+)['"]''')
+          while pending:
+              script=pending.pop()
+              if script in seen: continue
+              assert script.is_file(),f'R27_MODULE_NOT_DEPLOYED: {script}'
+              seen.add(script)
+              for path in imp.findall(script.read_text(encoding='utf-8')):
+                  p=(script.parent/path).resolve()
+                  assert p.is_relative_to(root.resolve()),'R27_IMPORT_OUTSIDE_PREVIEW'
+                  pending.append(p)
+          assert len(seen)>=20,'R27_INCOMPLETE_BROWSER_MODULE_GRAPH'
+          popup=(root/'integration/creative-next-original-poi-popup.js').read_text(encoding='utf-8')
+          assert 'textContent=record.title' in popup and "type:'edit'" in popup and "type:'delete'" in popup and "type:'move'" not in popup,'R27_POPUP_SAFE_BOUNDARY'
+          print('PASS: r27 original UI visual parity, popup safety and',len(seen),'browser modules')
+          PYR27
           touch _site/.nojekyll
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5
