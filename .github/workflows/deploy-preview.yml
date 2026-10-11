@@ -45,6 +45,9 @@ jobs:
           # r16: generate visual-only source from exact production patch chain, never execute old storage logic.
           git -C source fetch --depth 1 origin fe1877aa6d97793842f178c071eb65c97d1a4a59
           git -C source worktree add --detach ../source-exact-r16 fe1877aa6d97793842f178c071eb65c97d1a4a59
+          # r17: original UI DOM/CSS, isolated Undo/Redo test only.
+          git -C source fetch --depth 1 origin 7c6d44f9e9b3b9ab259d5d004dcbbc8b3383d890
+          git -C source worktree add --detach ../source-original-r17 7c6d44f9e9b3b9ab259d5d004dcbbc8b3383d890
       - name: Prepare isolated static preview
         run: |
           mkdir -p _site
@@ -91,6 +94,13 @@ jobs:
           cp source-exact-r16/creative-next/exact-ui-snapshot/index.html _site/original-ui-r16/runtime/index.html
           cp source-exact-r16/assets/creative-mode-opening-final.webp _site/original-ui-r16/assets/creative-mode-opening-final.webp
           cp source-exact-r16/assets/creative-mode-start-transition.webp _site/original-ui-r16/assets/creative-mode-start-transition.webp
+          node source-original-r17/creative-next/qa/build-original-ui-snapshot.cjs
+          mkdir -p _site/original-ui-r17/original-ui-r17 _site/original-ui-r17/assets _site/original-ui-r17/integration
+          cp source-original-r17/creative-next/original-ui-r17/index.html _site/original-ui-r17/original-ui-r17/index.html
+          cp source-original-r17/creative-next/original-ui-r17/r17-undo-redo.mjs _site/original-ui-r17/original-ui-r17/r17-undo-redo.mjs
+          cp source-original-r17/creative-next/integration/{original-ui-buttons-fixture,exclusive-creative-control,creative-next-command-boundary}.mjs _site/original-ui-r17/integration/
+          cp source-original-r17/assets/creative-mode-opening-final.webp _site/original-ui-r17/assets/creative-mode-opening-final.webp
+          cp source-original-r17/assets/creative-mode-start-transition.webp _site/original-ui-r17/assets/creative-mode-start-transition.webp
           # GitHub Pages may serve .mjs with an unsupported MIME type on iOS.
           # Publish module files as .js and update every local import reference.
           python3 - <<'PY'
@@ -138,6 +148,8 @@ jobs:
           test -f _site/map-ui-r15/assets/powerspot.png
           test -s _site/original-ui-r16/runtime/index.html
           test -s _site/original-ui-r16/assets/creative-mode-opening-final.webp
+          test -s _site/original-ui-r17/original-ui-r17/index.html
+          test -s _site/original-ui-r17/integration/original-ui-buttons-fixture.js
           if grep -iq '<script' _site/original-ui-r16/runtime/index.html; then exit 1; fi
           touch _site/.nojekyll
       - name: Configure GitHub Pages
