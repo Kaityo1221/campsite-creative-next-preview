@@ -63,6 +63,11 @@ jobs:
           git clone --depth 1 --branch feature/creative-next-ui-exact-parity-20261010 https://github.com/Kaityo1221/Campsite-Design-Tool-JP.git source-r21
           git -C source-r21 fetch --depth 1 origin 546cbfec01a920bd63752b4c8e19719e0075a585
           git -C source-r21 checkout 546cbfec01a920bd63752b4c8e19719e0075a585
+      - name: Fetch iPhone native picker r22
+        run: |
+          git clone --depth 1 --branch feature/creative-next-ui-exact-parity-20261010 https://github.com/Kaityo1221/Campsite-Design-Tool-JP.git source-r22
+          git -C source-r22 fetch --depth 1 origin 3bc05f192b58cc4f99bcaa98e3730dba7790970d
+          git -C source-r22 checkout 3bc05f192b58cc4f99bcaa98e3730dba7790970d
       - name: Prepare isolated static preview
         run: |
           mkdir -p _site
@@ -146,6 +151,13 @@ jobs:
           cp -R source-r21/creative-next/integration _site/original-ui-r21/integration
           cp -R source-r21/creative-next/phase-1b _site/original-ui-r21/phase-1b
           cp source-r21/assets/creative-mode-opening-final.webp _site/original-ui-r21/assets/creative-mode-opening-final.webp
+          node source-r22/creative-next/qa/build-original-ui-snapshot.cjs
+          mkdir -p _site/original-ui-r22/original-ui-r22 _site/original-ui-r22/assets
+          cp source-r22/creative-next/original-ui-r22/index.html _site/original-ui-r22/original-ui-r22/index.html
+          cp source-r22/creative-next/original-ui-r22/r22-readonly-map.mjs _site/original-ui-r22/original-ui-r22/r22-readonly-map.mjs
+          cp -R source-r22/creative-next/integration _site/original-ui-r22/integration
+          cp -R source-r22/creative-next/phase-1b _site/original-ui-r22/phase-1b
+          cp source-r22/assets/creative-mode-opening-final.webp _site/original-ui-r22/assets/creative-mode-opening-final.webp
           # GitHub Pages may serve .mjs with an unsupported MIME type on iOS.
           # Publish module files as .js and update every local import reference.
           python3 - <<'PY'
