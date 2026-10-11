@@ -229,7 +229,7 @@ jobs:
           test -s _site/original-ui-r21/original-ui-r20/index.html
           if grep -iq '<script' _site/original-ui-r16/runtime/index.html; then exit 1; fi
           # Inspect the final, post-extension-rewrite deployed HTML, not only its source template.
-          node -e 'const fs=require("fs");const h=fs.readFileSync("_site/original-ui-r23/original-ui-r23/index.html","utf8");const input=h.match(/<input[^>]*id="entryFile"[^>]*>/i)?.[0];const start=h.match(/<button[^>]*id="startButton"[^>]*>/i)?.[0];if(!input||/\\sdisabled\\b/i.test(input)||!start||!/\\sdisabled\\b/i.test(start)){throw Error("R23_NATIVE_FILE_PICKER_CI_GATE_FAILED")};console.log("PASS: r23 picker enabled and start remains disabled")'
+          node -e 'const fs=require("fs");const h=fs.readFileSync("_site/original-ui-r23/original-ui-r23/index.html","utf8");const input=h.match(/<input[^>]*id="entryFile"[^>]*>/i)?.[0];const start=h.match(/<button[^>]*id="startButton"[^>]*>/i)?.[0];if(!input||/\sdisabled\b/i.test(input)||!start||!/\sdisabled\b/i.test(start)){throw Error("R23_NATIVE_FILE_PICKER_CI_GATE_FAILED")};console.log("PASS: r23 picker enabled and start remains disabled")'
           touch _site/.nojekyll
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5
