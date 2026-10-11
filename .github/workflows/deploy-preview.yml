@@ -68,6 +68,11 @@ jobs:
           git clone --depth 1 --branch feature/creative-next-ui-exact-parity-20261010 https://github.com/Kaityo1221/Campsite-Design-Tool-JP.git source-r22
           git -C source-r22 fetch --depth 1 origin 606be4e0b8154b6bb317f1dbae42242a3f1fff9e
           git -C source-r22 checkout 606be4e0b8154b6bb317f1dbae42242a3f1fff9e
+      - name: Fetch r23 native picker generation fix
+        run: |
+          git clone --depth 1 --branch feature/creative-next-ui-exact-parity-20261010 https://github.com/Kaityo1221/Campsite-Design-Tool-JP.git source-r23
+          git -C source-r23 fetch --depth 1 origin 54563851baf4b279411595f01a2b856891760160
+          git -C source-r23 checkout 54563851baf4b279411595f01a2b856891760160
       - name: Prepare isolated static preview
         run: |
           mkdir -p _site
@@ -158,6 +163,15 @@ jobs:
           cp -R source-r22/creative-next/integration _site/original-ui-r22/integration
           cp -R source-r22/creative-next/phase-1b _site/original-ui-r22/phase-1b
           cp source-r22/assets/creative-mode-opening-final.webp _site/original-ui-r22/assets/creative-mode-opening-final.webp
+          # r23 is a NEW versioned preview; keep r22 pinned and unchanged.
+          node source-r23/creative-next/qa/current-creative-ui-source-parity.cjs
+          node source-r23/creative-next/qa/build-original-ui-snapshot.cjs
+          mkdir -p _site/original-ui-r23/original-ui-r23 _site/original-ui-r23/assets
+          cp source-r23/creative-next/original-ui-r22/index.html _site/original-ui-r23/original-ui-r23/index.html
+          cp source-r23/creative-next/original-ui-r22/r22-readonly-map.mjs _site/original-ui-r23/original-ui-r23/r22-readonly-map.mjs
+          cp -R source-r23/creative-next/integration _site/original-ui-r23/integration
+          cp -R source-r23/creative-next/phase-1b _site/original-ui-r23/phase-1b
+          cp source-r23/assets/creative-mode-opening-final.webp _site/original-ui-r23/assets/creative-mode-opening-final.webp
           # GitHub Pages may serve .mjs with an unsupported MIME type on iOS.
           # Publish module files as .js and update every local import reference.
           python3 - <<'PY'
@@ -214,6 +228,8 @@ jobs:
           test -s _site/original-ui-r20/original-ui-r20/index.html
           test -s _site/original-ui-r21/original-ui-r20/index.html
           if grep -iq '<script' _site/original-ui-r16/runtime/index.html; then exit 1; fi
+          # Inspect the final, post-extension-rewrite deployed HTML, not only its source template.
+          node -e 'const fs=require("fs");const h=fs.readFileSync("_site/original-ui-r23/original-ui-r23/index.html","utf8");const input=h.match(/<input[^>]*id="entryFile"[^>]*>/i)?.[0];const start=h.match(/<button[^>]*id="startButton"[^>]*>/i)?.[0];if(!input||/\\sdisabled\\b/i.test(input)||!start||!/\\sdisabled\\b/i.test(start)){throw Error("R23_NATIVE_FILE_PICKER_CI_GATE_FAILED")};console.log("PASS: r23 picker enabled and start remains disabled")'
           touch _site/.nojekyll
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5
