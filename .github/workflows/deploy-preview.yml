@@ -83,6 +83,11 @@ jobs:
           git clone --depth 1 --branch feature/creative-next-ui-exact-parity-20261010 https://github.com/Kaityo1221/Campsite-Design-Tool-JP.git source-r25
           git -C source-r25 fetch --depth 1 origin 4153b7d62d4d7b2d0049664579ec3a2f9e2b47f1
           git -C source-r25 checkout 4153b7d62d4d7b2d0049664579ec3a2f9e2b47f1
+      - name: Fetch r26 Safari double-tap guard
+        run: |
+          git clone --depth 1 --branch feature/creative-next-ui-exact-parity-20261010 https://github.com/Kaityo1221/Campsite-Design-Tool-JP.git source-r26
+          git -C source-r26 fetch --depth 1 origin 6bc6a14263ffc30c8cbc8ead96b421e1e48afe38
+          git -C source-r26 checkout 6bc6a14263ffc30c8cbc8ead96b421e1e48afe38
       - name: Prepare isolated static preview
         run: |
           mkdir -p _site
@@ -204,6 +209,19 @@ jobs:
           cp -R source-r25/creative-next/phase-1a _site/original-ui-r25/phase-1a
           cp -R source-r25/creative-next/phase-1b _site/original-ui-r25/phase-1b
           cp source-r25/assets/creative-mode-opening-final.webp _site/original-ui-r25/assets/creative-mode-opening-final.webp
+          # r26: existing original map UI and buttons, stronger iOS-only double-tap suppression.
+          node --test source-r26/creative-next/qa/r26-ios-double-tap.test.cjs
+          node --check source-r26/creative-next/original-ui-r26/r26-ios-tap-guard.js
+          node source-r26/creative-next/qa/current-creative-ui-source-parity.cjs
+          node source-r26/creative-next/qa/build-original-ui-snapshot.cjs
+          mkdir -p _site/original-ui-r26/original-ui-r26 _site/original-ui-r26/assets
+          cp source-r26/creative-next/original-ui-r26/index.html _site/original-ui-r26/original-ui-r26/index.html
+          cp source-r26/creative-next/original-ui-r25/r25-map-controls.mjs _site/original-ui-r26/original-ui-r26/r25-map-controls.mjs
+          cp source-r26/creative-next/original-ui-r26/r26-ios-tap-guard.js _site/original-ui-r26/original-ui-r26/r26-ios-tap-guard.js
+          cp -R source-r26/creative-next/integration _site/original-ui-r26/integration
+          cp -R source-r26/creative-next/phase-1a _site/original-ui-r26/phase-1a
+          cp -R source-r26/creative-next/phase-1b _site/original-ui-r26/phase-1b
+          cp source-r26/assets/creative-mode-opening-final.webp _site/original-ui-r26/assets/creative-mode-opening-final.webp
           # GitHub Pages may serve .mjs with an unsupported MIME type on iOS.
           # Publish module files as .js and update every local import reference.
           python3 - <<'PY'
@@ -322,6 +340,37 @@ jobs:
               assert symbol in controls,f'R25_CONTROL_UNWIRED: {symbol}'
           print('PASS: r25 exact approved visual parity, mobile tap guard, complete',len(visited),'module graph and controls')
           PYR25
+          # r26 must be visually identical to r25, with scoped nonvisual CSS/JS only.
+          python3 - <<'PYR26'
+          from pathlib import Path
+          import re
+          previous=Path('_site/original-ui-r25/original-ui-r25/index.html').read_text(encoding='utf-8')
+          root=Path('_site/original-ui-r26')
+          current=(root/'original-ui-r26/index.html').read_text(encoding='utf-8')
+          style='<style id="cmNextR26TapGuard">#map,.leaflet-container,.topbtn,.toolbox,.save,.bottom-bar button,#toolMenu button,#layerPanel button,#circlePanel button{touch-action:none!important}.topbtn,.toolbox,.save,.bottom-bar button,#toolMenu button,#layerPanel button,#circlePanel button{-webkit-user-select:none!important;user-select:none!important;-webkit-touch-callout:none!important}</style>'
+          guard='<script src="./r26-ios-tap-guard.js"></script>'
+          assert style in current and guard in current,'R26_GUARD_NOT_INSTALLED'
+          assert current.replace(style,'').replace(guard,'')==previous,'R26_APPROVED_VISUAL_DIFFERENCE'
+          assert current.index(guard)<current.index('<script type="module" src="./r25-map-controls.js"></script>'), 'R26_GUARD_MUST_RUN_BEFORE_MODULE'
+          assert (root/'original-ui-r26/r26-ios-tap-guard.js').is_file(),'R26_SCRIPT_MISSING'
+          source=(root/'original-ui-r26/r26-ios-tap-guard.js').read_text(encoding='utf-8')
+          assert 'passive:false' in source and 'document.addEventListener' in source and 'touchstart' in source and 'touchend' in source,'R26_NONPASSIVE_GUARD_MISSING'
+          assert '#entryFile' not in source and 'localStorage' not in source and 'indexedDB' not in source, 'R26_GUARD_SCOPE_INVALID'
+          pending=[root/'original-ui-r26/r25-map-controls.js']
+          seen=set()
+          imports=re.compile(r'''(?m)^\s*(?:import|export)\s+(?:[^\n]*?\sfrom\s*)?['"](\.[^'"]+)['"]''')
+          while pending:
+              path=pending.pop()
+              if path in seen:continue
+              assert path.is_file(),f'R26_MODULE_MISSING: {path}'
+              seen.add(path)
+              for rel in imports.findall(path.read_text(encoding='utf-8')):
+                  target=(path.parent/rel).resolve()
+                  assert target.is_relative_to(root.resolve()),'R26_DEPENDENCY_OUTSIDE_PREVIEW'
+                  pending.append(target)
+          assert len(seen)>8,'R26_MODULE_GRAPH_TOO_SMALL'
+          print('PASS: r26 visual parity, browser gesture guard, complete',len(seen),'module graph')
+          PYR26
           touch _site/.nojekyll
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5
