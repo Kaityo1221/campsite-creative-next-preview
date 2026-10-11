@@ -251,15 +251,15 @@ jobs:
           import re
           root=Path('_site/original-ui-r24')
           html=(root/'original-ui-r24/index.html').read_text(encoding='utf-8')
-          file_input=re.search(r'<input\\b[^>]*\\bid=["\\\']entryFile["\\\'][^>]*>',html,re.I)
-          start=re.search(r'<button\\b[^>]*\\bid=["\\\']startButton["\\\'][^>]*>',html,re.I)
-          assert file_input and not re.search(r'\\sdisabled\\b',file_input.group(0),re.I), 'R24_ENTRY_FILE_DISABLED'
-          assert start and re.search(r'\\sdisabled\\b',start.group(0),re.I), 'R24_START_MUST_REQUIRE_REVIEW'
+          file_input=re.search(r'<input\b[^>]*\bid="entryFile"[^>]*>',html,re.I)
+          start=re.search(r'<button\b[^>]*\bid="startButton"[^>]*>',html,re.I)
+          assert file_input and not re.search(r'\sdisabled\b',file_input.group(0),re.I), 'R24_ENTRY_FILE_DISABLED'
+          assert start and re.search(r'\sdisabled\b',start.group(0),re.I), 'R24_START_MUST_REQUIRE_REVIEW'
           assert (root/'phase-1a/core/poi-store.js').is_file(), 'R24_MISSING_POI_STORE'
           entry=root/'original-ui-r24/r22-readonly-map.js'
           pending=[entry]
           seen=set()
-          imports=re.compile(r'(?m)^\\s*(?:import|export)\\s+(?:[^\\n]*?\\sfrom\\s*)?["\\\'](\\.[^"\\\']+)["\\\']')
+          imports=re.compile(r'''(?m)^\s*(?:import|export)\s+(?:[^\n]*?\sfrom\s*)?['"](\.[^'"]+)['"]''')
           while pending:
               source=pending.pop()
               if source in seen: continue
