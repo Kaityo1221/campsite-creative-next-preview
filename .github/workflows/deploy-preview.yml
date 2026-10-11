@@ -50,6 +50,9 @@ jobs:
           git -C source worktree add --detach ../source-original-r17 7c6d44f9e9b3b9ab259d5d004dcbbc8b3383d890
           git -C source fetch --depth 1 origin 8c92daacb5e6b513f29ba64866661a34eeb7ada9
           git -C source worktree add --detach ../source-original-r18 8c92daacb5e6b513f29ba64866661a34eeb7ada9
+          # r19 original UI picker, explicit review, isolated editor only.
+          git -C source fetch --depth 1 origin 8861731c4fb28a808b4c43ca6b446f790e7a6cbf
+          git -C source worktree add --detach ../source-original-r19 8861731c4fb28a808b4c43ca6b446f790e7a6cbf
       - name: Prepare isolated static preview
         run: |
           mkdir -p _site
@@ -111,6 +114,14 @@ jobs:
           cp -R source-original-r18/creative-next/phase-1b _site/original-ui-r18/phase-1b
           cp source-original-r18/assets/creative-mode-opening-final.webp _site/original-ui-r18/assets/creative-mode-opening-final.webp
           cp source-original-r18/assets/creative-mode-start-transition.webp _site/original-ui-r18/assets/creative-mode-start-transition.webp
+          node source-original-r19/creative-next/qa/build-original-ui-snapshot.cjs
+          mkdir -p _site/original-ui-r19/original-ui-r19 _site/original-ui-r19/assets
+          cp source-original-r19/creative-next/original-ui-r19/index.html _site/original-ui-r19/original-ui-r19/index.html
+          cp source-original-r19/creative-next/original-ui-r19/r19-file-review.mjs _site/original-ui-r19/original-ui-r19/r19-file-review.mjs
+          cp -R source-original-r19/creative-next/integration _site/original-ui-r19/integration
+          cp -R source-original-r19/creative-next/phase-1b _site/original-ui-r19/phase-1b
+          cp source-original-r19/assets/creative-mode-opening-final.webp _site/original-ui-r19/assets/creative-mode-opening-final.webp
+          cp source-original-r19/assets/creative-mode-start-transition.webp _site/original-ui-r19/assets/creative-mode-start-transition.webp
           # GitHub Pages may serve .mjs with an unsupported MIME type on iOS.
           # Publish module files as .js and update every local import reference.
           python3 - <<'PY'
@@ -162,6 +173,8 @@ jobs:
           test -s _site/original-ui-r17/integration/original-ui-buttons-fixture.js
           test -s _site/original-ui-r18/original-ui-r18/index.html
           test -s _site/original-ui-r18/phase-1b/integration/isolated-editor-session.js
+          test -s _site/original-ui-r19/original-ui-r19/index.html
+          test -s _site/original-ui-r19/integration/original-file-review.js
           if grep -iq '<script' _site/original-ui-r16/runtime/index.html; then exit 1; fi
           touch _site/.nojekyll
       - name: Configure GitHub Pages
