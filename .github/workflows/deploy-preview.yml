@@ -53,6 +53,10 @@ jobs:
           # r19 original UI picker, explicit review, isolated editor only.
           git -C source fetch --depth 1 origin 8861731c4fb28a808b4c43ca6b446f790e7a6cbf
           git -C source worktree add --detach ../source-original-r19 8861731c4fb28a808b4c43ca6b446f790e7a6cbf
+      - name: Fetch isolated r20
+        run: |
+          git clone --depth 1 --branch feature/creative-next-ui-exact-parity-20261010 https://github.com/Kaityo1221/Campsite-Design-Tool-JP.git source-r20
+          git -C source-r20 checkout 84782ec579ed7459690cd4c28db877a0f903d511
       - name: Prepare isolated static preview
         run: |
           mkdir -p _site
@@ -122,6 +126,13 @@ jobs:
           cp -R source-original-r19/creative-next/phase-1b _site/original-ui-r19/phase-1b
           cp source-original-r19/assets/creative-mode-opening-final.webp _site/original-ui-r19/assets/creative-mode-opening-final.webp
           cp source-original-r19/assets/creative-mode-start-transition.webp _site/original-ui-r19/assets/creative-mode-start-transition.webp
+          node source-r20/creative-next/qa/build-original-ui-snapshot.cjs
+          mkdir -p _site/original-ui-r20/original-ui-r20 _site/original-ui-r20/assets
+          cp source-r20/creative-next/original-ui-r20/index.html _site/original-ui-r20/original-ui-r20/index.html
+          cp source-r20/creative-next/original-ui-r20/r20-readonly-map.mjs _site/original-ui-r20/original-ui-r20/r20-readonly-map.mjs
+          cp -R source-r20/creative-next/integration _site/original-ui-r20/integration
+          cp -R source-r20/creative-next/phase-1b _site/original-ui-r20/phase-1b
+          cp source-r20/assets/creative-mode-opening-final.webp _site/original-ui-r20/assets/creative-mode-opening-final.webp
           # GitHub Pages may serve .mjs with an unsupported MIME type on iOS.
           # Publish module files as .js and update every local import reference.
           python3 - <<'PY'
@@ -175,6 +186,7 @@ jobs:
           test -s _site/original-ui-r18/phase-1b/integration/isolated-editor-session.js
           test -s _site/original-ui-r19/original-ui-r19/index.html
           test -s _site/original-ui-r19/integration/original-file-review.js
+          test -s _site/original-ui-r20/original-ui-r20/index.html
           if grep -iq '<script' _site/original-ui-r16/runtime/index.html; then exit 1; fi
           touch _site/.nojekyll
       - name: Configure GitHub Pages
