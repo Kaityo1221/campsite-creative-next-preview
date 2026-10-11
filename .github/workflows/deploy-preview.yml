@@ -66,8 +66,8 @@ jobs:
       - name: Fetch iPhone native picker r22
         run: |
           git clone --depth 1 --branch feature/creative-next-ui-exact-parity-20261010 https://github.com/Kaityo1221/Campsite-Design-Tool-JP.git source-r22
-          git -C source-r22 fetch --depth 1 origin 3bc05f192b58cc4f99bcaa98e3730dba7790970d
-          git -C source-r22 checkout 3bc05f192b58cc4f99bcaa98e3730dba7790970d
+          git -C source-r22 fetch --depth 1 origin 606be4e0b8154b6bb317f1dbae42242a3f1fff9e
+          git -C source-r22 checkout 606be4e0b8154b6bb317f1dbae42242a3f1fff9e
       - name: Prepare isolated static preview
         run: |
           mkdir -p _site
