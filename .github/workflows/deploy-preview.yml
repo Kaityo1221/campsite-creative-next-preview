@@ -98,6 +98,11 @@ jobs:
           git clone --depth 1 --branch feature/creative-next-ui-exact-parity-20261010 https://github.com/Kaityo1221/Campsite-Design-Tool-JP.git source-r28
           git -C source-r28 fetch --depth 1 origin dbf34af4e3c478dc6ddd179f0da9ba65b787129f
           git -C source-r28 checkout dbf34af4e3c478dc6ddd179f0da9ba65b787129f
+      - name: Fetch r29 original layer-count edit regression
+        run: |
+          git clone --depth 1 --branch feature/creative-next-ui-exact-parity-20261010 https://github.com/Kaityo1221/Campsite-Design-Tool-JP.git source-r29
+          git -C source-r29 fetch --depth 1 origin e88f2783d3a1d495f46b4f0b66a4c7a1c0b9ea7b
+          git -C source-r29 checkout e88f2783d3a1d495f46b4f0b66a4c7a1c0b9ea7b
       - name: Prepare isolated static preview
         run: |
           mkdir -p _site
@@ -263,6 +268,23 @@ jobs:
           cp -R source-r28/creative-next/phase-1b _site/original-ui-r28/phase-1b
           cp source-r28/assets/creative-mode-opening-final.webp _site/original-ui-r28/assets/creative-mode-opening-final.webp
           cp source-r28/creative/assets/{pokestop,gym,powerspot}.png _site/original-ui-r28/assets/
+          # r29: immutable new URL, r28 visual DOM/CSS, synchronized layer-count behavior.
+          node --check source-r29/creative-next/original-ui-r29/r29-poi-editor.mjs
+          node --check source-r29/creative-next/original-ui-r29/r29-ios-tap-guard.js
+          node --test source-r29/creative-next/qa/r29-layer-counts.test.mjs
+          node --test source-r29/creative-next/qa/r28-new-poi-sheet.test.mjs
+          node --test source-r29/creative-next/qa/r26-ios-double-tap.test.cjs
+          node source-r29/creative-next/qa/current-creative-ui-source-parity.cjs
+          node source-r29/creative-next/qa/build-original-ui-snapshot.cjs
+          mkdir -p _site/original-ui-r29/original-ui-r29 _site/original-ui-r29/assets
+          cp source-r29/creative-next/original-ui-r29/index.html _site/original-ui-r29/original-ui-r29/index.html
+          cp source-r29/creative-next/original-ui-r29/r29-poi-editor.mjs _site/original-ui-r29/original-ui-r29/r29-poi-editor.mjs
+          cp source-r29/creative-next/original-ui-r29/r29-ios-tap-guard.js _site/original-ui-r29/original-ui-r29/r29-ios-tap-guard.js
+          cp -R source-r29/creative-next/integration _site/original-ui-r29/integration
+          cp -R source-r29/creative-next/phase-1a _site/original-ui-r29/phase-1a
+          cp -R source-r29/creative-next/phase-1b _site/original-ui-r29/phase-1b
+          cp source-r29/assets/creative-mode-opening-final.webp _site/original-ui-r29/assets/creative-mode-opening-final.webp
+          cp source-r29/creative/assets/{pokestop,gym,powerspot}.png _site/original-ui-r29/assets/
           # GitHub Pages may serve .mjs with an unsupported MIME type on iOS.
           # Publish module files as .js and update every local import reference.
           python3 - <<'PY'
@@ -480,6 +502,35 @@ jobs:
           assert len(seen)>=20,'R28_JS_GRAPH_INCOMPLETE'
           print('PASS: r28 only new POIs editable, source sheet CSS exact, Safari guard,',len(seen),'modules')
           PYR28
+          python3 - <<'PYR29'
+          from pathlib import Path
+          import re
+          old=Path('_site/original-ui-r28/original-ui-r28/index.html').read_text(encoding='utf-8')
+          root=Path('_site/original-ui-r29')
+          new=(root/'original-ui-r29/index.html').read_text(encoding='utf-8')
+          baseline=new.replace('r29-ios-tap-guard.js','r28-ios-tap-guard.js').replace('r29-poi-editor.js','r28-poi-editor.js')
+          assert old==baseline,'R29_APPROVED_VISUAL_SHELL_DIFFERENCE'
+          assert (root/'original-ui-r29/r29-ios-tap-guard.js').is_file(),'R29_SAFARI_GUARD_MISSING'
+          sheet=(root/'integration/creative-next-original-new-poi-sheet.js').read_text(encoding='utf-8')
+          assert "record.role!=='new'" in sheet and "既存POI（閲覧のみ）" in sheet,'R29_EXISTING_POI_NOT_READ_ONLY'
+          editor=(root/'original-ui-r29/r29-poi-editor.js').read_text(encoding='utf-8')
+          assert 'refreshLayerCounts();' in editor and "onRefresh:()=>{overlay?.refresh();refreshLayerCounts();}" in editor,'R29_HISTORY_LAYER_SYNC_MISSING'
+          assert not any(word in editor for word in ('localStorage','sessionStorage','indexedDB')),'R29_STORAGE_ACCESS_FORBIDDEN'
+          pending=[root/'original-ui-r29/r29-poi-editor.js']
+          seen=set()
+          imports=re.compile(r'''(?m)^\s*(?:import|export)\s+(?:[^\n]*?\sfrom\s*)?['"](\.[^'"]+)['"]''')
+          while pending:
+              source=pending.pop()
+              if source in seen:continue
+              assert source.is_file(),f'R29_MISSING_BROWSER_MODULE:{source}'
+              seen.add(source)
+              for rel in imports.findall(source.read_text(encoding='utf-8')):
+                  target=(source.parent/rel).resolve()
+                  assert target.is_relative_to(root.resolve()),'R29_IMPORT_OUTSIDE_ISOLATED_PREVIEW'
+                  pending.append(target)
+          assert len(seen)>=25,f'R29_MODULE_GRAPH_TOO_SMALL:{len(seen)}'
+          print('PASS: r29 production visual parity, layer labels, readonly source, Safari isolation,',len(seen),'modules')
+          PYR29
           touch _site/.nojekyll
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5
