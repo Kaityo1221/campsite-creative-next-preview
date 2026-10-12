@@ -108,6 +108,12 @@ jobs:
           git clone --depth 1 --branch feature/creative-next-ui-exact-parity-20261010 https://github.com/Kaityo1221/Campsite-Design-Tool-JP.git source-r30
           git -C source-r30 fetch --depth 1 origin 2d9f0c472a0263fd4b68044b76bb2a80bb265289
           git -C source-r30 checkout 2d9f0c472a0263fd4b68044b76bb2a80bb265289
+      - name: Fetch validated r31 feedback-7 commit (immutable)
+        run: |
+          git clone --depth 1 --branch fix/creative-next-r31-iphone-review-7-20261012 https://github.com/Kaityo1221/Campsite-Design-Tool-JP.git source-r31-review7
+          git -C source-r31-review7 fetch --depth 1 origin d839bef8d7e5d0b7269bd48e2636bf8a7b422723
+          git -C source-r31-review7 checkout --detach d839bef8d7e5d0b7269bd48e2636bf8a7b422723
+          test "$(git -C source-r31-review7 rev-parse HEAD)" = "d839bef8d7e5d0b7269bd48e2636bf8a7b422723"
       - name: Prepare isolated static preview
         run: |
           mkdir -p _site
@@ -589,6 +595,18 @@ jobs:
           assert len(seen)>=27, f'R30_MODULE_GRAPH_INCOMPLETE:{len(seen)}'
           print('PASS: r30 approved visual UI, plus FAB, centered cyan crosshair and',len(seen),'browser modules')
           PYR30
+          # r31 iPhone feedback-7 is NEW and source-pinned. Do not overwrite r16-r30.
+          # The original HTML base href ../../creative/ remains valid in this
+          # versioned subtree. Preserve the complete ESM module/asset graph.
+          mkdir -p _site/iphone-review-r31-7
+          cp -R source-r31-review7/creative-next _site/iphone-review-r31-7/creative-next
+          cp -R source-r31-review7/creative _site/iphone-review-r31-7/creative
+          test -s _site/iphone-review-r31-7/creative-next/original-ui-r31-b3-b4/index.html
+          test -s _site/iphone-review-r31-7/creative-next/original-ui-r31-b3-b4/bootstrap.mjs
+          test -s _site/iphone-review-r31-7/creative-next/original-ui-r31-b3-b4/adapter-review.mjs
+          test -s _site/iphone-review-r31-7/creative-next/phase-2-preview/vendor/jszip.min.js
+          grep -q "campsite-creative-next-v1-r31-b3-b4" _site/iphone-review-r31-7/creative-next/original-ui-r31-b3-b4/workspace.mjs
+          grep -q 'original-ui-r31-b3-b4/bootstrap.mjs' _site/iphone-review-r31-7/creative-next/original-ui-r31-b3-b4/index.html
           touch _site/.nojekyll
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5
@@ -601,6 +619,15 @@ jobs:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
+      - name: Verify published r31 iPhone preview files over HTTPS
+        if: steps.deployment.outcome == 'success'
+        run: |
+          ROOT="${{ steps.deployment.outputs.page_url }}iphone-review-r31-7"
+          for name in creative-next/original-ui-r31-b3-b4/index.html creative-next/original-ui-r31-b3-b4/bootstrap.mjs creative-next/original-ui-r31-b3-b4/adapter-review.mjs creative-next/phase-2-preview/vendor/jszip.min.js; do
+            curl -fLsS --retry 8 --retry-delay 3 -o /tmp/r31-preview-verify "$ROOT/$name"
+            test -s /tmp/r31-preview-verify
+          done
+          echo "R31_PREVIEW_HTTP_PASS $ROOT/creative-next/original-ui-r31-b3-b4/index.html"
       - name: Report isolated preview deployment status
         if: always()
         env:
