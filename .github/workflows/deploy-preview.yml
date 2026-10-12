@@ -120,6 +120,12 @@ jobs:
           git -C source-r31-review89 fetch --depth 1 origin 09d66c54ca6d06cded1dfdc3ab235360817e0887
           git -C source-r31-review89 checkout --detach 09d66c54ca6d06cded1dfdc3ab235360817e0887
           test "$(git -C source-r31-review89 rev-parse HEAD)" = "09d66c54ca6d06cded1dfdc3ab235360817e0887"
+      - name: Fetch validated r31 feedback-10 commit (immutable)
+        run: |
+          git clone --depth 1 --branch fix/creative-next-r31-iphone-review-10-20261012 https://github.com/Kaityo1221/Campsite-Design-Tool-JP.git source-r31-review10
+          git -C source-r31-review10 fetch --depth 1 origin e10a7cf0fe2dc2acfddac4957d29e973c8a6ec6f
+          git -C source-r31-review10 checkout --detach e10a7cf0fe2dc2acfddac4957d29e973c8a6ec6f
+          test "$(git -C source-r31-review10 rev-parse HEAD)" = "e10a7cf0fe2dc2acfddac4957d29e973c8a6ec6f"
       - name: Prepare isolated static preview
         run: |
           mkdir -p _site
@@ -623,6 +629,15 @@ jobs:
           grep -q "cmR31ChooseDestination" _site/iphone-review-r31-8-9/creative-next/original-ui-r31-b3-b4/ui-runtime.mjs
           grep -q "cmR31RulerExit" _site/iphone-review-r31-8-9/creative-next/original-ui-r31-b3-b4/ui-runtime.mjs
           test -s _site/iphone-review-r31-8-9/creative-next/phase-2-preview/vendor/jszip.min.js
+          # #010 return-to-entry file picker: own immutable URL and draft namespace.
+          mkdir -p _site/iphone-review-r31-10
+          cp -R source-r31-review10/creative-next _site/iphone-review-r31-10/creative-next
+          cp -R source-r31-review10/creative _site/iphone-review-r31-10/creative
+          test -s _site/iphone-review-r31-10/creative-next/original-ui-r31-b3-b4/index.html
+          test -s _site/iphone-review-r31-10/creative-next/original-ui-r31-b3-b4/bootstrap.mjs
+          test -s _site/iphone-review-r31-10/creative-next/phase-2-preview/vendor/jszip.min.js
+          grep -q 'campsite-creative-next-v1-r31-review-10' _site/iphone-review-r31-10/creative-next/original-ui-r31-b3-b4/workspace.mjs
+          grep -q 'onSwitchFile' _site/iphone-review-r31-10/creative-next/original-ui-r31-b3-b4/bootstrap.mjs
           touch _site/.nojekyll
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5
@@ -654,6 +669,17 @@ jobs:
           done
           curl -fLsS --retry 8 --retry-delay 3 "$ROOT/creative-next/original-ui-r31-b3-b4/workspace.mjs" | grep -q "campsite-creative-next-v1-r31-review-8-9"
           echo "R31_8_9_PREVIEW_HTTP_PASS $ROOT/creative-next/original-ui-r31-b3-b4/index.html"
+      - name: Verify new r31 10 preview over HTTPS
+        if: steps.deployment.outcome == 'success'
+        run: |
+          ROOT="${{ steps.deployment.outputs.page_url }}iphone-review-r31-10"
+          for name in creative-next/original-ui-r31-b3-b4/index.html creative-next/original-ui-r31-b3-b4/bootstrap.mjs creative-next/original-ui-r31-b3-b4/ui-runtime.mjs creative-next/original-ui-r31-b3-b4/workspace.mjs creative-next/phase-2-preview/vendor/jszip.min.js; do
+            curl -fLsS --retry 8 --retry-delay 3 -o /tmp/r31-preview-10-verify "$ROOT/$name"
+            test -s /tmp/r31-preview-10-verify
+          done
+          curl -fLsS --retry 8 --retry-delay 3 "$ROOT/creative-next/original-ui-r31-b3-b4/workspace.mjs" | grep -q "campsite-creative-next-v1-r31-review-10"
+          curl -fLsS --retry 8 --retry-delay 3 "$ROOT/creative-next/original-ui-r31-b3-b4/bootstrap.mjs" | grep -q "onSwitchFile"
+          echo "R31_10_PREVIEW_HTTP_PASS $ROOT/creative-next/original-ui-r31-b3-b4/index.html"
       - name: Report isolated preview deployment status
         if: always()
         env:
