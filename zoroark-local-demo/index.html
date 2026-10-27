@@ -18,25 +18,60 @@ label{display:block;margin:18px 0 9px;font-weight:700}select{width:100%;padding:
 .grid{display:grid;grid-template-columns:1fr 1fr;gap:11px}.grid button{font-size:14px}.dots{display:flex;gap:5px;margin:16px 0}.dots i{flex:1;height:6px;background:#4c5a73;border-radius:8px}.dots i.done{background:#74e8c8}
 .choices{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:9px;margin:15px 0}.choices button{background:#344b65;color:white;min-height:48px;padding:8px 0}.choices button.selected{background:#74e8c8;color:#142d37}
 .result{font-size:48px;font-weight:900;text-align:center;padding:20px 0;color:#9ff5db}.footer{text-align:center;color:#869db9;font-size:12px;margin:26px 0 0;line-height:1.8}
+select{display:block;width:100%;padding:13px;margin:0 0 12px;color:#f5f7ff;background:#101e32;border:1px solid #58738d;border-radius:12px;font-size:16px}
+label{display:block;margin:17px 0 8px;font-weight:800}
+.hint{padding:13px;border-radius:13px;margin:14px 0;background:#162a42;color:#c8d7ed;font-size:14px;line-height:1.7}
+.count{justify-content:center}.spaced{margin-top:10px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}.grid2 button{min-width:0}
+.reveal-stage{position:relative;overflow:hidden;min-height:225px;padding:18px 8px;margin:16px 0;border-radius:22px;border:1px solid #8e6cc5;background:radial-gradient(circle at 50% 30%,#75459b,#271843 60%,#121d34);text-align:center;animation:appear .65s ease-out both}
+.fox{font-size:67px;display:block;animation:foxpop .9s cubic-bezier(.2,1.5,.4,1) both}
+.reveal-title{font-size:15px;font-weight:800;letter-spacing:.06em;color:#f6d6ff}
+.reveal-number{font-size:49px;font-weight:900;color:#fff;margin:5px 0;text-shadow:0 0 24px #f3afff;animation:foxpop .65s .18s both}
+.win{font-size:22px;font-weight:900;text-align:center;margin:16px 0;color:#91f0d7}
+@keyframes appear{from{opacity:.1;filter:brightness(2);transform:scale(.97)}to{opacity:1;filter:brightness(1);transform:scale(1)}}
+@keyframes foxpop{from{opacity:0;transform:translateY(26px) scale(.65)}to{opacity:1;transform:translateY(0) scale(1)}}
+@media(prefers-reduced-motion:reduce){.reveal-stage,.fox,.reveal-number{animation:none!important}}
 </style></head><body>
 <main><div class="eyebrow">CA CLOVER · LOCAL DEMO</div><h1>🎭 ゾロアークを探せ！</h1><div class="muted">現地版 / GM専用・認証未接続</div><section class="shell" id="app" aria-live="polite"><p>ゲームを起動しています。表示が変わらない場合は、SafariからWebページとして開いてください。</p></section>
 <div class="footer">公開試用版：CA認証なし / 入力情報は保存・送信しません<br>CA Clover本体・DBとは接続しません</div></main>
 <script>
 "use strict";
 (function(){
-var pairs=[["デデンネ","エモンガ"],["ロコン","アローラロコン"],["プラスル","マイナン"],["サンド","アローラサンド"],["ニャース","アローラニャース"],["ポニータ","ガラルポニータ"],["ジグザグマ","ガラルジグザグマ"],["ダグトリオ","アローラダグトリオ"]];
-var topics=["見た目の特徴をひとつ教えて！","どこで出会いそうなポケモン？","相棒にしたい？ その理由は？","バトルで活躍しそう？","特徴的な部分をひとつ挙げるなら？","進化についてどう思う？"];
-var s={phase:"setup",count:6,time:180,index:0,show:false,wolf:0,pair:null,names:[],remaining:180,running:false,deadline:0,topic:0,voted:0,unmasked:false,round:0},tick=null,app=document.getElementById("app");
+var pairs=[{"id":"e01","level":"easy","a":"デデンネ","b":"エモンガ","common":"小型のでんきタイプ","difference":"エモンガはひこうタイプを持つ"},{"id":"e02","level":"easy","a":"ピカチュウ","b":"ライチュウ","common":"でんきタイプでほおに電気袋がある","difference":"ライチュウはピカチュウの進化形"},{"id":"e03","level":"easy","a":"ピチュー","b":"ピカチュウ","common":"黄色系のでんきタイプ","difference":"ピチューはベイビィポケモン"},{"id":"e04","level":"easy","a":"ロコン","b":"アローラロコン","common":"キツネの姿で尾を持つ","difference":"通常のロコンはほのお、アローラはこおりタイプ"},{"id":"e05","level":"easy","a":"サンド","b":"アローラサンド","common":"丸まることができる","difference":"アローラはこおり・はがねタイプ"},{"id":"e06","level":"easy","a":"ディグダ","b":"アローラディグダ","common":"地面から顔を出す","difference":"アローラははがねタイプを持つ"},{"id":"e07","level":"easy","a":"ニャース","b":"アローラニャース","common":"猫の姿で額に小判がある","difference":"アローラはあくタイプ"},{"id":"e08","level":"easy","a":"ポニータ","b":"ガラルポニータ","common":"馬のような姿","difference":"通常はほのお、ガラルはエスパータイプ"},{"id":"e09","level":"easy","a":"ゾロア","b":"ヒスイゾロア","common":"キツネのような姿で化ける","difference":"ヒスイはノーマル・ゴーストタイプ"},{"id":"e10","level":"easy","a":"ナッシー","b":"アローラナッシー","common":"ヤシの木を連想させる外見","difference":"アローラは非常に首が長い"},{"id":"e11","level":"easy","a":"コラッタ","b":"アローラコラッタ","common":"ネズミに似た小型ポケモン","difference":"アローラはあくタイプを持つ"},{"id":"e12","level":"easy","a":"バリヤード","b":"ガラルバリヤード","common":"人型で手を使う","difference":"ガラルはこおり・エスパータイプ"},{"id":"m01","level":"normal","a":"ガーディ","b":"ヒスイガーディ","common":"犬の姿のほのおタイプ","difference":"ヒスイはほのお・いわタイプ"},{"id":"m02","level":"normal","a":"ビリリダマ","b":"ヒスイビリリダマ","common":"モンスターボールのような外見","difference":"ヒスイはでんき・くさタイプ"},{"id":"m03","level":"normal","a":"マルマイン","b":"ヒスイマルマイン","common":"丸いボール状の姿","difference":"ヒスイはでんき・くさタイプ"},{"id":"m04","level":"normal","a":"ウパー","b":"パルデアウパー","common":"頭に枝状の突起がある","difference":"パルデアはどく・じめんタイプ"},{"id":"m05","level":"normal","a":"ヤドン","b":"ガラルヤドン","common":"のんびりした姿で尻尾が特徴","difference":"ガラルはエスパータイプ単独"},{"id":"m06","level":"normal","a":"ヤドラン","b":"ガラルヤドラン","common":"シェルダーと関連する進化形","difference":"ガラルはどく・エスパータイプ"},{"id":"m07","level":"normal","a":"ヤドキング","b":"ガラルヤドキング","common":"頭部にシェルダーがいる","difference":"ガラルはどく・エスパータイプ"},{"id":"m08","level":"normal","a":"ジグザグマ","b":"ガラルジグザグマ","common":"ジグザグ模様が特徴","difference":"ガラルはあく・ノーマルタイプ"},{"id":"m09","level":"normal","a":"ゴローニャ","b":"アローラゴローニャ","common":"岩のような大きな体","difference":"アローラはでんきタイプを持つ"},{"id":"m10","level":"normal","a":"イシツブテ","b":"アローライシツブテ","common":"岩石の体と腕がある","difference":"アローラはでんきタイプを持つ"},{"id":"m11","level":"normal","a":"ライチュウ","b":"アローラライチュウ","common":"ピカチュウの進化形","difference":"アローラはエスパータイプも持つ"},{"id":"m12","level":"normal","a":"マタドガス","b":"ガラルマタドガス","common":"複数の頭部と煙のイメージ","difference":"ガラルはどく・フェアリータイプ"},{"id":"m13","level":"normal","a":"カモネギ","b":"ガラルカモネギ","common":"植物の茎を持つ鳥","difference":"ガラルはかくとうタイプ"},{"id":"m14","level":"normal","a":"ベトベター","b":"アローラベトベター","common":"ヘドロのような体","difference":"アローラはどく・あくタイプ"},{"id":"m15","level":"normal","a":"ベトベトン","b":"アローラベトベトン","common":"ヘドロのような大きな体","difference":"アローラはどく・あくタイプ"},{"id":"h01","level":"hard","a":"プラスル","b":"マイナン","common":"うさぎに似たでんきタイプ","difference":"ほおと尻尾の記号が＋と−"},{"id":"h02","level":"hard","a":"ニドラン♀","b":"ニドラン♂","common":"毒のトゲと大きな耳","difference":"性別で進化系が異なる"},{"id":"h03","level":"hard","a":"ラティアス","b":"ラティオス","common":"飛行するドラゴン・エスパータイプ","difference":"体色と姿の違いがある"},{"id":"h04","level":"hard","a":"トルネロス","b":"ボルトロス","common":"雲に乗る伝説のポケモン","difference":"トルネロスはひこう単独、ボルトロスはでんき・ひこう"},{"id":"h05","level":"hard","a":"イルミーゼ","b":"バルビート","common":"ホタルのようなむしタイプ","difference":"姿や役割が異なる対のポケモン"},{"id":"h06","level":"hard","a":"ソルロック","b":"ルナトーン","common":"宇宙を連想させるいわ・エスパー","difference":"太陽と月がモチーフ"},{"id":"h07","level":"hard","a":"レシラム","b":"ゼクロム","common":"伝説のドラゴンタイプ","difference":"レシラムはほのお、ゼクロムはでんきタイプも持つ"},{"id":"h08","level":"hard","a":"ダルマッカ","b":"ガラルダルマッカ","common":"丸い体と大きな顔","difference":"ガラルはこおりタイプ"},{"id":"h09","level":"hard","a":"ロズレイド","b":"ロゼリア","common":"花を手にしたくさ・どくタイプ","difference":"ロズレイドはロゼリアの進化形"},{"id":"h10","level":"hard","a":"エルレイド","b":"サーナイト","common":"ラルトスから進化するエスパータイプ","difference":"エルレイドはかくとう、サーナイトはフェアリータイプも持つ"},{"id":"h11","level":"hard","a":"フラベベ","b":"フラエッテ","common":"花と一緒にいるフェアリータイプ","difference":"フラエッテはフラベベの進化形"},{"id":"h12","level":"hard","a":"グレイシア","b":"リーフィア","common":"イーブイの進化形","difference":"グレイシアはこおり、リーフィアはくさタイプ"},{"id":"h13","level":"hard","a":"ドガース","b":"マタドガス","common":"毒ガスを連想させるどくタイプ","difference":"マタドガスはドガースの進化形"},{"id":"h14","level":"hard","a":"パチリス","b":"エモンガ","common":"小さなリス型のでんきタイプ","difference":"エモンガはひこうタイプも持つ"},{"id":"h15","level":"hard","a":"ダンゴロ","b":"ガントル","common":"岩石の体を持ついわタイプ","difference":"ガントルはダンゴロの進化形"}];
+var topics=["色や形から連想する特徴は？","どんな場所にいそう？","このポケモンと旅するなら？","進化はすると思う？","ほかのポケモンと比べると？","強そうな技を使いそう？","Pokémon GOではどんな印象？","好きなところを一つ教えて！","初めて見たときの印象は？","相棒にしたい？","バトルに向いていそう？","一言で説明すると？"];
+function readRecent(){try{var v=JSON.parse(sessionStorage.getItem("zoroark_recent_v2")||"[]");return Array.isArray(v)?v.filter(function(x){return typeof x==="string"}).slice(-6):[]}catch(e){return []}}
+function saveRecent(){try{sessionStorage.setItem("zoroark_recent_v2",JSON.stringify(s.history))}catch(e){}}
+
+var s={phase:"setup",count:6,time:180,index:0,show:false,wolf:0,pair:null,names:[],remaining:180,running:false,deadline:0,topic:0,voted:0,unmasked:false,round:0,level:"all",mode:"自由トーク",talkRound:1,history:readRecent(),pairMeta:null},tick=null,app=document.getElementById("app");
 function r(n){if(window.crypto&&crypto.getRandomValues){var a=new Uint32Array(1);crypto.getRandomValues(a);return a[0]%n}return Math.floor(Math.random()*n)}
 function fmt(t){return String(Math.floor(t/60)).padStart(2,"0")+":"+String(t%60).padStart(2,"0")}
 function btn(label,act,cls){return '<button data-act="'+act+'" class="'+(cls||"")+'">'+label+'</button>'}
 function wrap(title,body){app.innerHTML='<div class="top"><span class="status">'+s.phase.toUpperCase()+'</span><span class="pill">ROUND '+(s.round||"準備")+'</span></div><h2>'+title+'</h2>'+body}
 function stop(){if(tick){clearInterval(tick);tick=null}s.running=false}
-function begin(){stop();s.round++;s.index=0;s.show=false;s.unmasked=false;s.voted=0;s.pair=pairs[r(pairs.length)].slice();if(r(2)===1)s.pair.reverse();s.wolf=r(s.count);s.names=Array.from({length:s.count},function(_,i){return s.pair[i===s.wolf?1:0]});s.remaining=s.time;s.phase="handoff";paint()}
+function begin(){stop();s.round++;s.index=0;s.show=false;s.unmasked=false;s.voted=0;s.talkRound=1;
+var eligible=pairs.filter(function(p){return s.level==="all"||p.level===s.level});
+var fresh=eligible.filter(function(p){return s.history.indexOf(p.id)===-1});
+if(fresh.length===0)fresh=eligible;
+var pick=fresh[r(fresh.length)];s.pairMeta=pick;
+s.history.push(pick.id);s.history=s.history.slice(-6);saveRecent();
+s.pair=[pick.a,pick.b];if(r(2)===1)s.pair.reverse();
+s.wolf=r(s.count);s.names=Array.from({length:s.count},function(_,i){return s.pair[i===s.wolf?1:0]});
+s.remaining=s.time;s.phase="handoff";paint()}
 function paint(){var h="",i;
 if(s.phase==="setup"){
-h='<p>ゲームマスターのスマホを順番に回して、お題を1人ずつ確認します。プレイヤーは自分が少数派かどうか知りません。</p><label>プレイヤー人数（GMは除く）</label><div class="count">'+btn("−","minus","secondary")+'<strong>'+s.count+'</strong>'+btn("＋","plus","secondary")+'</div><small>推奨6〜8人（3〜12人対応）</small><label>トークタイム</label><select id="duration"><option value="120">2分</option><option value="180">3分</option><option value="300">5分</option><option value="0">制限なし</option></select><p>会話は自由。嘘やブラフもOK！ 最後は指差し投票です。</p><div class="actions">'+btn("ゲームを開始","begin")+'</div>';
-wrap("ゲームを準備する",h);document.getElementById("duration").value=String(s.time);return
+h='<p>GMのスマホを回して秘密のお題を確認します。<strong>少数派本人にも役職は知らせません。</strong></p>'+
+'<div class="hint">🗂 お題は全'+pairs.length+'組。直近6組は、できる限り出題を避けます。</div>'+
+'<label>プレイヤー人数（GMは含まない）</label><div class="count">'+btn("−","minus","secondary")+'<strong>'+s.count+'</strong>'+btn("＋","plus","secondary")+'</div><small>推奨6〜8人（3〜12人に対応）</small>'+
+'<label for="level">お題の難易度</label><select id="level"><option value="all">おまかせ（全難易度）</option><option value="easy">初級：似た姿から考える</option><option value="normal">中級：リージョン中心</option><option value="hard">上級：細かな違いを見抜く</option></select>'+
+'<label for="modeSelect">トークの進め方</label><select id="modeSelect"><option>自由トーク</option><option>順番に2周</option></select>'+
+'<label for="duration">トーク時間</label><select id="duration"><option value="120">2分</option><option value="180">3分</option><option value="300">5分</option><option value="0">制限なし</option></select>'+
+'<div class="hint">🎭 嘘・ブラフOK。ポケモン名を口にしないこと。勝敗はGMが指差し投票の結果を入力します。</div>'+
+'<div class="actions">'+btn("ゲームを開始","begin")+'</div>';
+wrap("ゲームを準備する",h);
+document.getElementById("duration").value=String(s.time);
+document.getElementById("level").value=s.level;
+document.getElementById("modeSelect").value=s.mode;
+return
 }
 if(s.phase==="handoff"){
 var dots='<div class="dots">';for(i=0;i<s.count;i++)dots+='<i class="'+(i<s.index?"done":"")+'"></i>';dots+='</div>';
@@ -44,7 +79,15 @@ h=dots+'<div class="notice">⚠️ プレイヤー'+(s.index+1)+'だけが画面
 wrap("プレイヤー "+(s.index+1)+" / "+s.count,h);return
 }
 if(s.phase==="talk"){
-h='<p>順番に話すのも、フリートークも自由。意図的な嘘もOKです。</p><div class="timer" id="timer">'+(s.time?fmt(s.remaining):"∞")+'</div><div class="grid">'+btn(s.time?(s.running?"⏸ 停止":"▶ 開始"):"制限なし","timerToggle","secondary")+btn("🎤 話題を変える","topic","outline")+'</div><label>トーク補助</label><div class="help">'+topics[s.topic]+'</div><div class="actions">'+btn("投票へ進む","vote")+'</div>';
+h='<p>順番に話すのもフリートークも自由。<strong>嘘やブラフもOK！</strong></p>'+
+'<div class="hint">🎤 進行の目安：'+s.mode+(s.mode==="順番に2周"?" / "+s.talkRound+"周目":"")+'</div>'+
+'<div class="timer" id="timer">'+(s.time?fmt(s.remaining):"∞")+'</div>'+
+'<div class="grid2">'+btn(s.time?(s.running?"⏸ 一時停止":"▶ タイマー開始"):"時間制限なし","timerToggle","secondary")+
+btn("＋30秒","extend","secondary")+'</div>'+
+'<div class="grid2 spaced">'+btn("🎤 別の話題","topic","outline")+btn("🔁 次の周へ","roundCue","outline")+'</div>'+
+'<label>トーク補助（GM向け）</label><div class="help">'+topics[s.topic]+'</div>'+
+'<div class="hint">💡 全員が話せているか確認し、答えに困っている人にはテーマを振ってください。余裕があれば自由に延長できます。</div>'+
+'<div class="actions">'+btn("指差し投票へ","vote")+'</div>';
 wrap("会話で探り合おう！",h);return
 }
 if(s.phase==="vote"){
@@ -54,7 +97,13 @@ h+='</div><div class="actions">'+btn("判定画面へ","result") + btn("トー�
 wrap("ゾロアークは誰だ？",h);return
 }
 if(s.phase==="result"){
-h=s.unmasked?'<div class="result">🦊 '+(s.wolf+1)+'番</div><p>多数派のお題：<strong>'+s.pair[0]+'</strong><br>少数派のお題：<strong>'+s.pair[1]+'</strong></p><div class="help">'+(s.voted===s.wolf+1?"🎉 多数派の勝ち！":"🎭 ゾロアークの勝ち！")+'</div><div class="actions">'+btn("次のゲームへ","again")+btn("人数設定に戻る","reset","outline")+'</div>':'<div class="secret"><div class="lock">🎭</div>全員の準備ができたら正体を公開！</div><div class="actions">'+btn("🦊 正体を公開する","unmask")+'</div>';
+h=s.unmasked?
+'<div class="reveal-stage"><div class="fox" aria-hidden="true">🦊</div><div class="reveal-title">ゾロアークの正体は…</div><div class="reveal-number">'+(s.wolf+1)+'番！</div></div>'+
+'<div class="win">'+(s.voted===s.wolf+1?"🎉 多数派の勝利！":"🎭 ゾロアークの勝利！")+'</div>'+
+'<p>最多得票：<strong>'+s.voted+'番</strong><br>多数派：<strong>'+s.pair[0]+'</strong><br>少数派：<strong>'+s.pair[1]+'</strong></p>'+
+'<div class="help"><strong>共通点：</strong>'+s.pairMeta.common+'<br><strong>違い：</strong>'+s.pairMeta.difference+'</div>'+
+'<div class="actions">'+btn("次のゲームへ","again")+btn("人数設定に戻る","reset","outline")+'</div>':
+'<div class="secret"><div class="lock">🎭</div>全員の準備ができたら正体を公開！</div><div class="actions">'+btn("🦊 正体を公開する","unmask")+'</div>';
 wrap("正体発表！",h);return
 }}
 document.addEventListener("click",function(ev){var el=ev.target.closest("button[data-act]");if(!el)return;var a=el.getAttribute("data-act");
@@ -65,6 +114,8 @@ if(a==="reset"){stop();s.phase="setup";paint()}
 if(a==="show"){s.show=true;paint()}
 if(a==="next"){s.show=false;s.index++;if(s.index===s.count){s.phase="talk";s.topic=r(topics.length)}paint()}
 if(a==="topic"){s.topic=(s.topic+1+r(topics.length-1))%topics.length;paint()}
+if(a==="roundCue"){s.talkRound=s.talkRound===1?2:1;paint()}
+if(a==="extend"){if(s.time===0)return;s.remaining+=30;if(s.running)s.deadline+=30000;paint()}
 if(a==="timerToggle"&&s.time){if(s.running){s.remaining=Math.max(0,Math.ceil((s.deadline-Date.now())/1000));stop();paint()}else{s.deadline=Date.now()+s.remaining*1000;s.running=true;tick=setInterval(function(){s.remaining=Math.max(0,Math.ceil((s.deadline-Date.now())/1000));var d=document.getElementById("timer");if(d)d.textContent=fmt(s.remaining);if(s.remaining===0){stop();paint()}},200);paint()}}
 if(a==="vote"){stop();s.phase="vote";paint()}
 if(a==="back"){s.phase="talk";paint()}
@@ -72,7 +123,12 @@ if(a==="select"){s.voted=Number(el.getAttribute("data-id"));paint()}
 if(a==="result"){if(!s.voted){alert("最多得票者を選択してください");return}s.phase="result";paint()}
 if(a==="unmask"){s.unmasked=true;paint()}
 });
-document.addEventListener("change",function(ev){if(ev.target.id==="duration")s.time=Number(ev.target.value)});
+document.addEventListener("change",function(ev){
+if(ev.target.id==="duration")s.time=Number(ev.target.value);
+if(ev.target.id==="level")s.level=ev.target.value;
+if(ev.target.id==="modeSelect")s.mode=ev.target.value
+});
+document.addEventListener("visibilitychange",function(){if(document.hidden&&s.phase==="handoff"&&s.show){s.show=false;paint()}});
 paint();
 })();
 </script></body></html>
