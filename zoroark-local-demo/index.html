@@ -83,7 +83,7 @@ h='<p>順番に話すのもフリートークも自由。<strong>嘘やブラフ
 '<div class="hint">🎤 進行の目安：'+s.mode+(s.mode==="順番に2周"?" / "+s.talkRound+"周目":"")+'</div>'+
 '<div class="timer" id="timer">'+(s.time?fmt(s.remaining):"∞")+'</div>'+
 '<div class="grid2">'+btn(s.time?(s.running?"⏸ 一時停止":"▶ タイマー開始"):"時間制限なし","timerToggle","secondary")+
-btn("＋30秒","extend","secondary")+'</div>'+
+(s.time?btn("＋30秒","extend","secondary"):'<button class="secondary" disabled>延長不要</button>')+'</div>'+
 '<div class="grid2 spaced">'+btn("🎤 別の話題","topic","outline")+btn("🔁 次の周へ","roundCue","outline")+'</div>'+
 '<label>トーク補助（GM向け）</label><div class="help">'+topics[s.topic]+'</div>'+
 '<div class="hint">💡 全員が話せているか確認し、答えに困っている人にはテーマを振ってください。余裕があれば自由に延長できます。</div>'+
